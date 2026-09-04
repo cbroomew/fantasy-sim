@@ -1,29 +1,29 @@
-fantasy_team,slot,player,pos,team,opp,proj,std,source
-Gridiron Gamblers,QB,Josh Allen,QB,BUF,@HOU,19.5,6.4,consensus
-Gridiron Gamblers,RB1,Bijan Robinson,RB,ATL,@PIT,20.4,9.8,consensus
-Gridiron Gamblers,RB2,De'Von Achane,RB,MIA,@LV,17.4,8.4,consensus
-Gridiron Gamblers,WR1,Ja'Marr Chase,WR,CIN,vs TB,20.0,10.4,consensus
-Gridiron Gamblers,WR2,Jaxon Smith-Njigba,WR,SEA,vs NE,19.1,9.9,consensus
-Gridiron Gamblers,TE,Trey McBride,TE,ARI,@LAC,14.5,7.5,consensus
-Gridiron Gamblers,FLEX,Garrett Wilson,WR,NYJ,@TEN,14.3,7.4,derived
-Gridiron Gamblers,K,Brandon Aubrey,K,DAL,@NYG,8.3,3.7,consensus
-Gridiron Gamblers,DST,Browns D/ST,DST,CLE,@JAX,6.0,4.2,estimate
-Gridiron Gamblers,BN,Kenneth Walker III,RB,KC,vs DEN,14.0,6.7,estimate
-Gridiron Gamblers,BN,Rome Odunze,WR,CHI,@CAR,12.1,6.3,derived
-Gridiron Gamblers,BN,Xavier Worthy,WR,KC,vs DEN,9.8,5.1,derived
-Gridiron Gamblers,BN,Dalton Kincaid,TE,BUF,@HOU,9.4,4.9,derived
-Gridiron Gamblers,BN,Bo Nix,QB,DEN,@KC,17.5,5.8,derived
-Play Action Jackson,QB,Jayden Daniels,QB,WAS,@PHI,17.6,5.8,consensus
-Play Action Jackson,RB1,Jahmyr Gibbs,RB,DET,vs NO,22.1,10.6,consensus
-Play Action Jackson,RB2,Chase Brown,RB,CIN,vs TB,16.1,7.7,consensus
-Play Action Jackson,WR1,Puka Nacua,WR,LAR,vs SF,20.2,10.5,consensus
-Play Action Jackson,WR2,CeeDee Lamb,WR,DAL,@NYG,17.0,8.8,consensus
-Play Action Jackson,TE,Brock Bowers,TE,LV,vs MIA,15.1,7.9,consensus
-Play Action Jackson,FLEX,Nico Collins,WR,HOU,vs BUF,16.2,8.4,consensus
-Play Action Jackson,K,Jake Bates,K,DET,vs NO,8.2,3.7,consensus
-Play Action Jackson,DST,Steelers D/ST,DST,PIT,vs ATL,7.1,5.0,consensus
-Play Action Jackson,BN,Drake Maye,QB,NE,@SEA,17.3,5.7,consensus
-Play Action Jackson,BN,Kyren Williams,RB,LAR,vs SF,14.2,6.8,estimate
-Play Action Jackson,BN,Malik Nabers,WR,NYG,vs DAL,13.8,7.2,estimate
-Play Action Jackson,BN,Ladd McConkey,WR,LAC,vs ARI,12.8,6.7,derived
-Play Action Jackson,BN,Sam LaPorta,TE,DET,vs NO,11.7,6.1,consensus
+fantasy_team,slot,player,pos,team,opp,proj,std,source,note
+Gridiron Gamblers,QB,Josh Allen,QB,BUF,@HOU,19.5,6.4,consensus,"Week 1 consensus table, retrieved 2026-09-04"
+Gridiron Gamblers,RB1,Bijan Robinson,RB,ATL,@PIT,20.4,9.8,consensus,"Week 1 consensus table, retrieved 2026-09-04"
+Gridiron Gamblers,RB2,De'Von Achane,RB,MIA,@LV,17.4,8.4,consensus,"Week 1 consensus table, retrieved 2026-09-04"
+Gridiron Gamblers,WR1,Ja'Marr Chase,WR,CIN,vs TB,20.0,10.4,consensus,"Week 1 consensus table, retrieved 2026-09-04"
+Gridiron Gamblers,WR2,Jaxon Smith-Njigba,WR,SEA,vs NE,19.1,9.9,consensus,"Week 1 consensus table, retrieved 2026-09-04"
+Gridiron Gamblers,TE,Trey McBride,TE,ARI,@LAC,14.5,7.5,consensus,"Week 1 consensus table, retrieved 2026-09-04"
+Gridiron Gamblers,FLEX,Garrett Wilson,WR,NYJ,@TEN,14.3,7.4,derived,"computed from published full-season projection (PPR, /17)"
+Gridiron Gamblers,K,Brandon Aubrey,K,DAL,@NYG,8.3,3.7,consensus,"Week 1 consensus table, retrieved 2026-09-04"
+Gridiron Gamblers,DST,Browns D/ST,DST,CLE,@JAX,6.0,4.2,ESTIMATE-UNVERIFIED,outside published top-10 DST table; placeholder below the 7.1 ranked 10th
+Gridiron Gamblers,BN,Kenneth Walker III,RB,KC,vs DEN,14.0,6.7,ESTIMATE-UNVERIFIED,no Week 1 or season projection found after KC free-agency move; placeholder for a lead back
+Gridiron Gamblers,BN,Rome Odunze,WR,CHI,@CAR,12.1,6.3,derived,"computed from published full-season projection (PPR, /17)"
+Gridiron Gamblers,BN,Xavier Worthy,WR,KC,vs DEN,9.8,5.1,derived,"computed from published full-season projection (PPR, /17)"
+Gridiron Gamblers,BN,Dalton Kincaid,TE,BUF,@HOU,9.4,4.9,derived,"computed from published full-season projection (PPR, /17)"
+Gridiron Gamblers,BN,Bo Nix,QB,DEN,@KC,17.5,5.8,derived,"computed from published full-season projection (PPR, /17)"
+Play Action Jackson,QB,Jayden Daniels,QB,WAS,@PHI,17.6,5.8,consensus,"Week 1 consensus table, retrieved 2026-09-04"
+Play Action Jackson,RB1,Jahmyr Gibbs,RB,DET,vs NO,22.1,10.6,consensus,"Week 1 consensus table, retrieved 2026-09-04"
+Play Action Jackson,RB2,Chase Brown,RB,CIN,vs TB,16.1,7.7,consensus,"Week 1 consensus table, retrieved 2026-09-04"
+Play Action Jackson,WR1,Puka Nacua,WR,LAR,vs SF,20.2,10.5,consensus,"Week 1 consensus table, retrieved 2026-09-04"
+Play Action Jackson,WR2,CeeDee Lamb,WR,DAL,@NYG,17.0,8.8,consensus,"Week 1 consensus table, retrieved 2026-09-04"
+Play Action Jackson,TE,Brock Bowers,TE,LV,vs MIA,15.1,7.9,consensus,"Week 1 consensus table, retrieved 2026-09-04"
+Play Action Jackson,FLEX,Nico Collins,WR,HOU,vs BUF,16.2,8.4,consensus,"Week 1 consensus table, retrieved 2026-09-04"
+Play Action Jackson,K,Jake Bates,K,DET,vs NO,8.2,3.7,consensus,"Week 1 consensus table, retrieved 2026-09-04"
+Play Action Jackson,DST,Steelers D/ST,DST,PIT,vs ATL,7.1,5.0,consensus,"Week 1 consensus table, retrieved 2026-09-04"
+Play Action Jackson,BN,Drake Maye,QB,NE,@SEA,17.3,5.7,consensus,"Week 1 consensus table, retrieved 2026-09-04"
+Play Action Jackson,BN,Kyren Williams,RB,LAR,vs SF,14.2,6.8,ESTIMATE-UNVERIFIED,"season total published as standard scoring only; receptions unavailable, ~40 assumed for PPR"
+Play Action Jackson,BN,Malik Nabers,WR,NYG,vs DAL,13.8,7.2,ESTIMATE-UNVERIFIED,"season total published as standard scoring only; receptions unavailable, ~75 assumed for PPR"
+Play Action Jackson,BN,Ladd McConkey,WR,LAC,vs ARI,12.8,6.7,derived,"computed from published full-season projection (PPR, /17)"
+Play Action Jackson,BN,Sam LaPorta,TE,DET,vs NO,11.7,6.1,consensus,"Week 1 consensus table, retrieved 2026-09-04"

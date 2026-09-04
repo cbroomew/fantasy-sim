@@ -59,11 +59,37 @@ footer:
 | --- | --- |
 | `consensus` | Week 1 consensus projection taken directly from a public projection table |
 | `derived` | computed from a published full-season projection (converted to PPR, divided by 17) |
-| `estimate` | no published number found; a reasoned placeholder — **treat with suspicion** |
+| `ESTIMATE-UNVERIFIED` | no published number found; a reasoned placeholder — **do not trust it** |
 
-Player-team pairings and all Week 1 opponents were verified against the
+The `note` column records the specific provenance of every row, including why
+each estimate could not be verified.
+
+#### The four unverified rows
+
+These projections are **not sourced from anything**. Free projection tables cut
+off at the top ten and full tables are paywalled, so no published Week 1 number
+could be found for them. They are my own reasoned placeholders, and they are the
+first thing to replace if you use this file for anything real:
+
+| player | value used | why it is unverified |
+| --- | --- | --- |
+| Kenneth Walker III | 14.0 | No Week 1 or season projection found after his free-agency move to KC. Placeholder for a lead back. |
+| Browns D/ST | 6.0 | Fell outside the published top-10 DST table; set just below the 7.1 that ranked tenth. |
+| Kyren Williams | 14.2 | Season total was published in standard scoring only. Receptions unavailable, so ~40 were assumed to convert to PPR. |
+| Malik Nabers | 13.8 | Same standard-scoring problem, ~75 receptions assumed. Separately, he is returning from a torn ACL, which makes any projection for him unusually soft. |
+
+Two of the four (Walker, Nabers) sit on benches and only matter to the start/sit
+section; the Browns D/ST and Kyren Williams estimates feed a starting lineup and
+a bench alternative respectively, so they move the headline win probability.
+
+`sim.py` prints a tally of the `source` column in its footer and names the
+unverified players explicitly, so the caveat travels with the output rather than
+living only in this file.
+
+Player-team pairings and all Week 1 opponents **were** verified, against the
 published 2026 Week 1 schedule. Replace the file with your own league's numbers
-and the `source` column can be dropped or repurposed; it is optional.
+and the `source` and `note` columns can be dropped or repurposed; both are
+optional.
 
 ## CSV format
 
@@ -81,7 +107,8 @@ teams in the file.
 | `opp` | Opponent as you want it shown, e.g. `@HOU` or `vs TB`. Display only. |
 | `proj` | Projected fantasy points. The mean of the player's distribution. |
 | `std` | Standard deviation of that projection — see below. |
-| `source` | Optional. Free-text provenance label, tallied in the footer. |
+| `source` | Optional. Free-text provenance label, tallied in the footer. A value starting with `ESTIMATE` also triggers a named warning line under the tally. |
+| `note` | Optional. Free-text provenance detail. Never parsed by the simulator. |
 
 Flex eligibility: `RB`, `WR` and `TE` may fill `FLEX`. `QB`, `K` and `DST` may
 only fill their own slot.

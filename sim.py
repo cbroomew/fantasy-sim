@@ -454,6 +454,12 @@ def main():
     if tally:
         p("  projections: " + " · ".join("%d %s" % (n, k) for k, n in tally.items())
           + "  (every number above is read from %s)" % args.csv)
+    unverified = [x.name for x in players if x.source.upper().startswith("ESTIMATE")]
+    if unverified:
+        for line in textwrap.wrap(
+                "! %d of these are UNVERIFIED ESTIMATES, not consensus data: %s."
+                % (len(unverified), ", ".join(unverified)), INNER):
+            p("  " + line)
     p()
 
 
