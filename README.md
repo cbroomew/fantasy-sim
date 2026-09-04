@@ -10,6 +10,14 @@ python3 sim.py
 
 No dependencies — Python 3 standard library only. No install step, no virtualenv.
 
+> **The bundled `projections.csv` is a frozen snapshot, not live data.** It holds
+> a sample Week 1 2026 matchup verified on 2026-09-04 and it never updates
+> itself. Anyone reading this after that date is looking at historical numbers,
+> and four of its rows are unverified estimates (see
+> [The four unverified rows](#the-four-unverified-rows)). It exists to
+> demonstrate the format — replace it with your own league's projections before
+> drawing any conclusion from the output.
+
 ## What it does
 
 For each simulated week it draws a score for every starter, sums the nine
