@@ -1,0 +1,1057 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Monte Carlo Matchup Simulator</title>
+<meta name="description" content="Head-to-head fantasy football matchup simulator. Monte Carlo with real error bars and coin-flip honesty when calls are inseparable.">
+<style>
+:root{
+  --bg:#0d0d0d; --panel:#131313; --edge:#262626; --edge2:#1c1c1c;
+  --text:#e2e2e2; --muted:#8a8a8a; --dim:#484848; --track:#272727;
+  --accent:#4ade80; --warn:#f5b301; --danger:#f87171;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,"Cascadia Mono","Roboto Mono",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--text); font-family:var(--mono);
+  font-size:14px; line-height:1.5; -webkit-text-size-adjust:100%;
+  padding-bottom:calc(84px + env(safe-area-inset-bottom));
+}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 8px}
+h1{font-size:19px;line-height:1.25;letter-spacing:.06em;margin:0 0 6px;color:var(--accent);font-weight:600}
+h2{font-size:12px;letter-spacing:.16em;margin:0;color:var(--text);font-weight:600}
+.sub{color:var(--muted);margin:0 0 14px;font-size:12.5px}
+.note{
+  border-left:2px solid var(--warn); background:#191408; color:#d9cba6;
+  padding:9px 11px; margin:0 0 20px; font-size:11.5px; line-height:1.55; border-radius:0 5px 5px 0;
+}
+.panel{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:14px;margin-bottom:14px}
+.panelhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.tools{display:flex;gap:6px}
+button{font-family:var(--mono);cursor:pointer;border-radius:7px;transition:border-color .12s,color .12s}
+.tools button,.add,.csvbtn{
+  background:#1b1b1b;color:var(--muted);border:1px solid var(--edge);
+  font-size:11px;letter-spacing:.09em;padding:8px 11px;min-height:36px;
+}
+.tools button:hover,.add:hover,.csvbtn:hover{color:var(--text);border-color:#3a3a3a}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tabs button{
+  flex:1;background:#161616;color:var(--muted);border:1px solid var(--edge);
+  padding:10px 8px;min-height:44px;font-size:11.5px;letter-spacing:.05em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.tabs button[aria-selected="true"]{background:#0f2417;color:var(--accent);border-color:#2b5c3d}
+.row{border-bottom:1px solid var(--edge2)}
+.row:last-of-type{border-bottom:0}
+.rowhead{
+  display:grid;grid-template-columns:44px 1fr auto auto;gap:8px;align-items:center;
+  width:100%;background:none;border:0;color:var(--text);
+  padding:11px 2px;min-height:48px;text-align:left;font-size:13px;
+}
+.rowhead:hover{background:#171717}
+.slot{color:var(--accent);font-size:10.5px;letter-spacing:.06em}
+.slot.bn{color:var(--dim)}
+.nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mt{color:var(--dim);font-size:10.5px}
+.pj{color:var(--text);font-variant-numeric:tabular-nums;min-width:42px;text-align:right}
+.est{color:var(--warn)}
+.edit{padding:4px 2px 14px;display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.edit label{display:flex;flex-direction:column;gap:4px;font-size:10px;color:var(--muted);letter-spacing:.08em}
+.edit .full{grid-column:1/-1}
+input,select{
+  font-family:var(--mono);font-size:16px; /* 16px stops iOS Safari zooming on focus */
+  background:#0b0b0b;color:var(--text);border:1px solid var(--edge);
+  border-radius:6px;padding:9px 10px;min-height:42px;width:100%;
+}
+input:focus,select:focus{outline:none;border-color:var(--accent)}
+.rm{background:#1a0f0f;color:#c86a6a;border:1px solid #3a1f1f;font-size:11px;padding:9px;min-height:42px}
+.errors{margin-top:12px;font-size:11.5px;color:var(--danger);line-height:1.7}
+.errors div::before{content:"! ";color:var(--danger)}
+#csvPanel textarea{
+  width:100%;height:190px;background:#0b0b0b;color:var(--text);
+  border:1px solid var(--edge);border-radius:8px;padding:11px;
+  font-family:var(--mono);font-size:12px;line-height:1.5;resize:vertical;white-space:pre;
+}
+.csvrow{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap}
+.report{padding:16px 12px;overflow:hidden}
+#report{
+  margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.5;
+  white-space:pre;overflow:hidden;
+}
+#report .dim{color:var(--dim)}
+#report .muted{color:var(--muted)}
+#report .accent{color:var(--accent)}
+#report .warn{color:var(--warn)}
+#report .track{color:var(--track)}
+.runbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:20;
+  background:rgba(13,13,13,.96);border-top:1px solid var(--edge);
+  backdrop-filter:blur(8px);
+  padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+  display:flex;gap:9px;align-items:center;
+}
+.runbar .f{display:flex;flex-direction:column;gap:3px;font-size:9.5px;color:var(--muted);letter-spacing:.08em}
+.runbar input,.runbar select{min-height:44px;padding:7px 8px;font-size:15px}
+.runbar .f.seed{width:82px}
+.runbar .f.sims{width:96px}
+#run{
+  flex:1;background:var(--accent);color:#06210f;border:0;font-weight:700;
+  font-size:15px;letter-spacing:.14em;min-height:52px;border-radius:9px;
+}
+#run:disabled{background:#243026;color:#5c6b60;cursor:not-allowed}
+#run:not(:disabled):active{transform:translateY(1px)}
+footer{color:var(--dim);font-size:11px;text-align:center;padding:18px 0 26px;line-height:1.9}
+footer a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--edge)}
+footer a:hover{color:var(--accent);border-color:var(--accent)}
+.sep{color:var(--edge);margin:0 7px}
+@media (max-width:359px){
+  .wrap{padding:16px 10px 8px}
+  .panel{padding:12px 10px}
+  #report{font-size:11.5px}
+}
+@media (min-width:620px){
+  .wrap{padding:28px 20px 8px}
+  h1{font-size:23px}
+  #report{font-size:13.5px}
+  .edit{grid-template-columns:repeat(4,1fr)}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>MONTE CARLO MATCHUP SIMULATOR</h1>
+    <p class="sub">Head-to-head fantasy football, simulated 10,000 times.</p>
+    <p class="note" id="snapshotNote"></p>
+  </header>
+
+  <section class="panel">
+    <div class="panelhead">
+      <h2>LINEUPS</h2>
+      <div class="tools">
+        <button id="btnCsv" type="button">CSV</button>
+        <button id="btnReset" type="button">RESET</button>
+      </div>
+    </div>
+    <div class="tabs" id="teamTabs" role="tablist"></div>
+    <div id="rosterList"></div>
+    <button class="add" id="btnAdd" type="button">+ ADD PLAYER</button>
+    <div class="errors" id="errors"></div>
+  </section>
+
+  <section class="panel" id="csvPanel" hidden>
+    <div class="panelhead"><h2>CSV IMPORT / EXPORT</h2></div>
+    <p class="sub" style="margin-bottom:9px">Same columns as <code>projections.csv</code>, so lineups round-trip with <code>sim.py</code>.</p>
+    <textarea id="csvText" spellcheck="false" aria-label="CSV data"></textarea>
+    <div class="csvrow">
+      <button class="csvbtn" id="btnCsvLoad" type="button">LOAD FROM TEXT</button>
+      <button class="csvbtn" id="btnCsvFill" type="button">FILL WITH CURRENT</button>
+      <button class="csvbtn" id="btnCsvDownload" type="button">DOWNLOAD .CSV</button>
+    </div>
+  </section>
+
+  <section class="panel report" id="reportPanel" hidden><pre id="report"></pre></section>
+
+  <footer id="foot"></footer>
+</div>
+
+<div class="runbar">
+  <label class="f seed">SEED<input id="seed" type="number" inputmode="numeric" value="1234"></label>
+  <label class="f sims">SIMS<select id="sims">
+    <option value="1000">1,000</option>
+    <option value="10000" selected>10,000</option>
+    <option value="50000">50,000</option>
+    <option value="100000">100,000</option>
+  </select></label>
+  <button id="run" type="button">RUN</button>
+</div>
+
+<script>
+"use strict";
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Set this to your Whop URL to show the "Join the room" footer link.
+   Left empty, the link stays hidden so the published page never ships a
+   dead link.
+   ───────────────────────────────────────────────────────────────────────── */
+const ROOM_URL = "";
+
+const SNAPSHOT = "The preloaded projections are a frozen snapshot verified 2026-09-04, not a live feed. Four rows are unverified estimates. Edit anything below, or load your own league's CSV.";
+
+const DEFAULT_ROSTER = [
+  {"id": "p0", "team": "Gridiron Gamblers", "slot": "QB", "name": "Josh Allen", "pos": "QB", "nfl": "BUF", "opp": "@HOU", "proj": 19.5, "std": 6.4, "source": "consensus"},
+  {"id": "p1", "team": "Gridiron Gamblers", "slot": "RB1", "name": "Bijan Robinson", "pos": "RB", "nfl": "ATL", "opp": "@PIT", "proj": 20.4, "std": 9.8, "source": "consensus"},
+  {"id": "p2", "team": "Gridiron Gamblers", "slot": "RB2", "name": "De'Von Achane", "pos": "RB", "nfl": "MIA", "opp": "@LV", "proj": 17.4, "std": 8.4, "source": "consensus"},
+  {"id": "p3", "team": "Gridiron Gamblers", "slot": "WR1", "name": "Ja'Marr Chase", "pos": "WR", "nfl": "CIN", "opp": "vs TB", "proj": 20.0, "std": 10.4, "source": "consensus"},
+  {"id": "p4", "team": "Gridiron Gamblers", "slot": "WR2", "name": "Jaxon Smith-Njigba", "pos": "WR", "nfl": "SEA", "opp": "vs NE", "proj": 19.1, "std": 9.9, "source": "consensus"},
+  {"id": "p5", "team": "Gridiron Gamblers", "slot": "TE", "name": "Trey McBride", "pos": "TE", "nfl": "ARI", "opp": "@LAC", "proj": 14.5, "std": 7.5, "source": "consensus"},
+  {"id": "p6", "team": "Gridiron Gamblers", "slot": "FLEX", "name": "Garrett Wilson", "pos": "WR", "nfl": "NYJ", "opp": "@TEN", "proj": 14.3, "std": 7.4, "source": "derived"},
+  {"id": "p7", "team": "Gridiron Gamblers", "slot": "K", "name": "Brandon Aubrey", "pos": "K", "nfl": "DAL", "opp": "@NYG", "proj": 8.3, "std": 3.7, "source": "consensus"},
+  {"id": "p8", "team": "Gridiron Gamblers", "slot": "DST", "name": "Browns D/ST", "pos": "DST", "nfl": "CLE", "opp": "@JAX", "proj": 6.0, "std": 4.2, "source": "ESTIMATE-UNVERIFIED"},
+  {"id": "p9", "team": "Gridiron Gamblers", "slot": "BN", "name": "Kenneth Walker III", "pos": "RB", "nfl": "KC", "opp": "vs DEN", "proj": 14.0, "std": 6.7, "source": "ESTIMATE-UNVERIFIED"},
+  {"id": "p10", "team": "Gridiron Gamblers", "slot": "BN", "name": "Rome Odunze", "pos": "WR", "nfl": "CHI", "opp": "@CAR", "proj": 12.1, "std": 6.3, "source": "derived"},
+  {"id": "p11", "team": "Gridiron Gamblers", "slot": "BN", "name": "Xavier Worthy", "pos": "WR", "nfl": "KC", "opp": "vs DEN", "proj": 9.8, "std": 5.1, "source": "derived"},
+  {"id": "p12", "team": "Gridiron Gamblers", "slot": "BN", "name": "Dalton Kincaid", "pos": "TE", "nfl": "BUF", "opp": "@HOU", "proj": 9.4, "std": 4.9, "source": "derived"},
+  {"id": "p13", "team": "Gridiron Gamblers", "slot": "BN", "name": "Bo Nix", "pos": "QB", "nfl": "DEN", "opp": "@KC", "proj": 17.5, "std": 5.8, "source": "derived"},
+  {"id": "p14", "team": "Play Action Jackson", "slot": "QB", "name": "Jayden Daniels", "pos": "QB", "nfl": "WAS", "opp": "@PHI", "proj": 17.6, "std": 5.8, "source": "consensus"},
+  {"id": "p15", "team": "Play Action Jackson", "slot": "RB1", "name": "Jahmyr Gibbs", "pos": "RB", "nfl": "DET", "opp": "vs NO", "proj": 22.1, "std": 10.6, "source": "consensus"},
+  {"id": "p16", "team": "Play Action Jackson", "slot": "RB2", "name": "Chase Brown", "pos": "RB", "nfl": "CIN", "opp": "vs TB", "proj": 16.1, "std": 7.7, "source": "consensus"},
+  {"id": "p17", "team": "Play Action Jackson", "slot": "WR1", "name": "Puka Nacua", "pos": "WR", "nfl": "LAR", "opp": "vs SF", "proj": 20.2, "std": 10.5, "source": "consensus"},
+  {"id": "p18", "team": "Play Action Jackson", "slot": "WR2", "name": "CeeDee Lamb", "pos": "WR", "nfl": "DAL", "opp": "@NYG", "proj": 17.0, "std": 8.8, "source": "consensus"},
+  {"id": "p19", "team": "Play Action Jackson", "slot": "TE", "name": "Brock Bowers", "pos": "TE", "nfl": "LV", "opp": "vs MIA", "proj": 15.1, "std": 7.9, "source": "consensus"},
+  {"id": "p20", "team": "Play Action Jackson", "slot": "FLEX", "name": "Nico Collins", "pos": "WR", "nfl": "HOU", "opp": "vs BUF", "proj": 16.2, "std": 8.4, "source": "consensus"},
+  {"id": "p21", "team": "Play Action Jackson", "slot": "K", "name": "Jake Bates", "pos": "K", "nfl": "DET", "opp": "vs NO", "proj": 8.2, "std": 3.7, "source": "consensus"},
+  {"id": "p22", "team": "Play Action Jackson", "slot": "DST", "name": "Steelers D/ST", "pos": "DST", "nfl": "PIT", "opp": "vs ATL", "proj": 7.1, "std": 5.0, "source": "consensus"},
+  {"id": "p23", "team": "Play Action Jackson", "slot": "BN", "name": "Drake Maye", "pos": "QB", "nfl": "NE", "opp": "@SEA", "proj": 17.3, "std": 5.7, "source": "consensus"},
+  {"id": "p24", "team": "Play Action Jackson", "slot": "BN", "name": "Kyren Williams", "pos": "RB", "nfl": "LAR", "opp": "vs SF", "proj": 14.2, "std": 6.8, "source": "ESTIMATE-UNVERIFIED"},
+  {"id": "p25", "team": "Play Action Jackson", "slot": "BN", "name": "Malik Nabers", "pos": "WR", "nfl": "NYG", "opp": "vs DAL", "proj": 13.8, "std": 7.2, "source": "ESTIMATE-UNVERIFIED"},
+  {"id": "p26", "team": "Play Action Jackson", "slot": "BN", "name": "Ladd McConkey", "pos": "WR", "nfl": "LAC", "opp": "vs ARI", "proj": 12.8, "std": 6.7, "source": "derived"},
+  {"id": "p27", "team": "Play Action Jackson", "slot": "BN", "name": "Sam LaPorta", "pos": "TE", "nfl": "DET", "opp": "vs NO", "proj": 11.7, "std": 6.1, "source": "consensus"}
+];
+
+const STARTING_SLOTS = ["QB","RB1","RB2","WR1","WR2","TE","FLEX","K","DST"];
+const ELIGIBLE = {
+  QB:["QB"], RB:["RB1","RB2","FLEX"], WR:["WR1","WR2","FLEX"],
+  TE:["TE","FLEX"], K:["K"], DST:["DST"]
+};
+const POSITIONS = ["QB","RB","WR","TE","K","DST"];
+
+/* ══ core: pure, no DOM — this half is what tools/parity.js runs in Node ══ */
+
+/* sfc32, seeded through splitmix32. Statistically equivalent to sim.py's
+   Mersenne Twister for this purpose, but not bit-identical: the same seed
+   gives different draws here than in Python. */
+function splitmix32(a){
+  return function(){
+    a = (a + 0x9e3779b9) | 0;
+    let t = a ^ (a >>> 16); t = Math.imul(t, 0x21f0aaad);
+    t = t ^ (t >>> 15);     t = Math.imul(t, 0x735a2d97);
+    return ((t = t ^ (t >>> 15)) >>> 0) / 4294967296;
+  };
+}
+function makeRng(seed){
+  const sm = splitmix32(seed | 0);
+  let a = sm()*4294967296, b = sm()*4294967296, c = sm()*4294967296, d = sm()*4294967296;
+  const rng = function(){
+    a|=0; b|=0; c|=0; d|=0;
+    let t = (((a + b) | 0) + d) | 0;
+    d = (d + 1) | 0;
+    a = b ^ (b >>> 9);
+    b = (c + (c << 3)) | 0;
+    c = (c << 21) | (c >>> 11);
+    c = (c + t) | 0;
+    return (t >>> 0) / 4294967296;
+  };
+  for (let i = 0; i < 12; i++) rng();   // discard weak initial state
+  return rng;
+}
+/* Marsaglia polar — no trig, and it naturally yields pairs. */
+function normalStream(seed){
+  const rng = makeRng(seed);
+  let spare = null;
+  return function(){
+    if (spare !== null){ const s = spare; spare = null; return s; }
+    let u, v, s;
+    do { u = rng()*2-1; v = rng()*2-1; s = u*u + v*v; } while (s >= 1 || s === 0);
+    const m = Math.sqrt(-2*Math.log(s)/s);
+    spare = v*m;
+    return u*m;
+  };
+}
+
+/* Skill positions draw from a lognormal matched to (proj, std): weekly scoring
+   is right-skewed, floored at zero. K and DST use a normal — tighter and
+   roughly symmetric, and DST is allowed to go negative because it does. */
+function drawSamples(p, n, seed){
+  const z = normalStream(seed);
+  const out = new Float32Array(n);
+  const m = p.proj, s = p.std;
+  if (p.pos === "K" || p.pos === "DST"){
+    const floor = p.pos === "DST" ? -4 : 0;
+    for (let i = 0; i < n; i++) out[i] = Math.max(floor, m + s*z());
+    return out;
+  }
+  const sigma = s > 0 ? Math.sqrt(Math.log(1 + (s/m)*(s/m))) : 0;
+  const mu = Math.log(m) - 0.5*sigma*sigma;
+  for (let i = 0; i < n; i++) out[i] = Math.exp(mu + sigma*z());
+  return out;
+}
+
+function totalScores(lineup, samples, n){
+  const out = new Float64Array(n);
+  for (const slot of STARTING_SLOTS){
+    const s = samples[lineup[slot].id];
+    for (let i = 0; i < n; i++) out[i] += s[i];
+  }
+  return out;
+}
+function winRate(a, b, n){
+  let w = 0;
+  for (let i = 0; i < n; i++) w += a[i] > b[i] ? 1 : (a[i] === b[i] ? 0.5 : 0);
+  return w/n;
+}
+function pct(sorted, q){
+  const k = (sorted.length - 1) * (q/100);
+  const lo = Math.floor(k), hi = Math.ceil(k);
+  if (lo === hi) return sorted[k];
+  return sorted[lo]*(hi - k) + sorted[hi]*(k - lo);
+}
+
+/* A swap changes exactly one slot, so the alternate total is
+   base - out + in. That is ~9x less work than re-summing all nine, and it
+   keeps the other eight starters bit-identical week by week — which is what
+   makes this a paired comparison with a tight error bar. */
+function evalSwap(base, opp, outS, inS, n){
+  let sum = 0, sumsq = 0, flipped = 0, wins = 0;
+  for (let i = 0; i < n; i++){
+    const o = opp[i];
+    const alt = base[i] - outS[i] + inS[i];
+    const bf = base[i] > o ? 1 : (base[i] === o ? 0.5 : 0);
+    const af = alt    > o ? 1 : (alt    === o ? 0.5 : 0);
+    wins += af;
+    const d = af - bf;
+    if (d !== 0) flipped++;
+    sum += d; sumsq += d*d;
+  }
+  const mean = sum/n;
+  const varr = Math.max(0, (sumsq - n*mean*mean)/(n - 1));
+  return { wpAfter: wins/n, dWp: mean, se: Math.sqrt(varr/n), flipped };
+}
+
+function simulate(roster, sims, seed){
+  const n = sims;
+  const teams = [];
+  for (const p of roster) if (!teams.includes(p.team)) teams.push(p.team);
+  const [A, B] = teams;
+
+  const samples = {};
+  const boom = {};
+  roster.forEach((p, i) => {
+    const s = drawSamples(p, n, (seed + i*7919) | 0);
+    samples[p.id] = s;
+    let c = 0, thr = p.proj*1.5;
+    for (let k = 0; k < n; k++) if (s[k] >= thr) c++;
+    boom[p.id] = c/n;
+  });
+
+  const lineups = {}, benches = {};
+  for (const t of teams){
+    const r = roster.filter(p => p.team === t);
+    const lu = {};
+    for (const slot of STARTING_SLOTS) lu[slot] = r.find(p => p.slot === slot);
+    lineups[t] = lu;
+    benches[t] = r.filter(p => p.slot === "BN");
+  }
+
+  const tot = { [A]: totalScores(lineups[A], samples, n), [B]: totalScores(lineups[B], samples, n) };
+  const wp  = { [A]: winRate(tot[A], tot[B], n) };
+  wp[B] = 1 - wp[A];
+
+  const margins = new Float64Array(n);
+  for (let i = 0; i < n; i++) margins[i] = tot[A][i] - tot[B][i];
+  let msum = 0, close = 0, blow = 0;
+  for (let i = 0; i < n; i++){
+    msum += margins[i];
+    const am = Math.abs(margins[i]);
+    if (am <= 5) close++;
+    if (am > 30) blow++;
+  }
+
+  const swaps = [];
+  for (const t of teams){
+    const other = t === A ? B : A;
+    for (const cand of benches[t]){
+      for (const slot of (ELIGIBLE[cand.pos] || [])){
+        const starter = lineups[t][slot];
+        const r = evalSwap(tot[t], tot[other], samples[starter.id], samples[cand.id], n);
+        swaps.push({
+          team:t, slot, out:starter, in:cand,
+          wpBefore: wp[t], wpAfter: r.wpAfter, dWp: r.dWp, se: r.se, flipped: r.flipped,
+          dProj: cand.proj - starter.proj,
+          significant: Math.abs(r.dWp) > 2*r.se && Math.abs(r.dWp)*100 >= 0.25
+        });
+      }
+    }
+  }
+
+  /* Featured call: smallest projection gap. The tiebreak is deliberately
+     independent of the simulation — using simulated impact made the featured
+     decision flicker between runs. */
+  let call = null;
+  for (const s of swaps){
+    if (!call) { call = s; continue; }
+    const k1 = [Math.round(Math.abs(s.dProj)*100)/100, -s.out.proj, s.team, s.slot, s.in.name];
+    const k2 = [Math.round(Math.abs(call.dProj)*100)/100, -call.out.proj, call.team, call.slot, call.in.name];
+    for (let i = 0; i < k1.length; i++){
+      if (k1[i] === k2[i]) continue;
+      if (k1[i] < k2[i]) call = s;
+      break;
+    }
+  }
+  let best = null;
+  for (const s of swaps) if (!best || s.dWp > best.dWp) best = s;
+
+  const sa = Float64Array.from(tot[A]).sort();
+  const sb = Float64Array.from(tot[B]).sort();
+
+  const tally = {};
+  for (const p of roster){ const k = (p.source || "").trim(); if (k) tally[k] = (tally[k]||0)+1; }
+  const unverified = roster.filter(p => (p.source||"").toUpperCase().startsWith("ESTIMATE")).map(p => p.name);
+
+  return { teams:[A,B], lineups, benches, tot, wp, sa, sb, margins, boom, sims:n, seed,
+           meanMargin: msum/n, closeFrac: close/n, blowFrac: blow/n,
+           swaps, call, best, tally, unverified,
+           projTotal: { [A]: sum9(lineups[A]), [B]: sum9(lineups[B]) } };
+}
+function sum9(lu){ return STARTING_SLOTS.reduce((a,s) => a + lu[s].proj, 0); }
+</script>
+<script id="reporter">
+/* ══ renderer: result → lines of {t,c} segments ══ */
+const S  = (t, c) => ({ t: String(t), c: c || "" });
+const LN = (t, c) => [S(t, c)];
+const rep = (ch, n) => ch.repeat(Math.max(0, n));
+const padE = (s, w) => { s = String(s); return s.length > w ? s.slice(0, w) : s + rep(" ", w - s.length); };
+const padS = (s, w) => { s = String(s); return s.length > w ? s.slice(0, w) : rep(" ", w - s.length) + s; };
+const ctr  = (s, w) => { s = String(s).slice(0, w); const l = Math.floor((w - s.length)/2); return rep(" ", l) + s + rep(" ", w - s.length - l); };
+const pp   = v => (Math.abs(v) < 1 ? (v>=0?"+":"") + v.toFixed(2) : (v>=0?"+":"") + v.toFixed(1));
+
+function wrapText(s, w){
+  const words = String(s).split(/\s+/).filter(Boolean);
+  const out = []; let line = "";
+  for (const word of words){
+    if (!line) line = word;
+    else if ((line + " " + word).length <= w) line += " " + word;
+    else { out.push(line); line = word; }
+  }
+  if (line) out.push(line);
+  return out.length ? out : [""];
+}
+function matchup(p){ return p.nfl + " " + p.opp; }
+
+function barSegs(frac, w, cls){
+  const f = Math.round(frac * w);
+  return [S(rep("█", f), cls || "accent"), S(rep("░", w - f), "track")];
+}
+
+function sectionHead(L, title, cols){
+  L.push([]);
+  L.push(LN(title));
+  L.push(LN(rep("─", cols), "dim"));
+}
+
+function verdictBox(L, cols, head, body, cls){
+  const inner = cols - 2, textW = inner - 6;
+  L.push([S("┏" + rep("━", inner) + "┓", "dim")]);
+  L.push([S("┃", "dim"), S(padE(" ▶  " + head, inner), cls), S("┃", "dim")]);
+  L.push([S("┃", "dim"), S(rep(" ", inner)), S("┃", "dim")]);
+  for (const para of body)
+    for (const w of wrapText(para, textW))
+      L.push([S("┃", "dim"), S(padE("    " + w, inner)), S("┃", "dim")]);
+  L.push([S("┗" + rep("━", inner) + "┛", "dim")]);
+}
+
+function histogram(L, margins, cols){
+  const sorted = Float64Array.from(margins).sort();
+  const lim = Math.max(Math.abs(pct(sorted, 1)), Math.abs(pct(sorted, 99)));
+  const bins = Math.min(44, cols % 2 ? cols - 1 : cols);
+  const zero = bins >> 1, rows = 5, BL = " ▁▂▃▄▅▆▇█";
+  const counts = new Array(bins).fill(0);
+  for (const v of margins){
+    if (v < -lim || v > lim) continue;      // tails fall off the axis
+    counts[Math.min(Math.floor((v + lim)/(2*lim)*bins), bins - 1)]++;
+  }
+  const peak = Math.max(...counts) || 1;
+  const eighths = counts.map(c => Math.round(c/peak*rows*8));
+  const pad = rep(" ", Math.max(0, Math.floor((cols - bins)/2)));
+  for (let r = 0; r < rows; r++){
+    const base = (rows - 1 - r)*8;
+    L.push([S(pad), S(eighths.map(e => BL[Math.min(Math.max(e - base, 0), 8)]).join(""), "accent")]);
+  }
+  L.push([S(pad), S(Array.from({length:bins}, (_,i) => i === zero ? "┼" : "─").join(""), "dim")]);
+  const lab = Array(bins).fill(" ");
+  const put = (txt, at) => { for (let i = 0; i < txt.length; i++) if (at+i >= 0 && at+i < bins) lab[at+i] = txt[i]; };
+  put(String(Math.round(-lim)), 0);
+  put("TIE", zero - 1);
+  put("+" + Math.round(lim), bins - String(Math.round(lim)).length - 1);
+  L.push([S(pad), S(lab.join(""), "muted")]);
+}
+
+function renderReport(res, cols){
+  const L = [];
+  const wide = cols >= 76;
+  const [A, B] = res.teams;
+
+  /* ── header ── */
+  const inner = cols - 2;
+  L.push([S("┌" + rep("─", inner) + "┐", "dim")]);
+  L.push([S("│", "dim"), S(ctr("MONTE CARLO MATCHUP SIMULATOR", inner), "accent"), S("│", "dim")]);
+  const vs = A + "  vs.  " + B;
+  if (vs.length <= inner){
+    L.push([S("│", "dim"), S(ctr(vs, inner), "muted"), S("│", "dim")]);
+  } else {
+    L.push([S("│", "dim"), S(ctr(A, inner), "muted"), S("│", "dim")]);
+    L.push([S("│", "dim"), S(ctr("vs.", inner), "dim"), S("│", "dim")]);
+    L.push([S("│", "dim"), S(ctr(B, inner), "muted"), S("│", "dim")]);
+  }
+  L.push([S("│", "dim"), S(ctr(res.sims.toLocaleString() + " simulations", inner), "muted"), S("│", "dim")]);
+  L.push([S("└" + rep("─", inner) + "┘", "dim")]);
+
+  /* ── lineups ── */
+  sectionHead(L, "STARTING LINEUPS", cols);
+  const showMt = cols >= 46;
+  const rowFor = (p, w) => {
+    const nameW = w - 11 - (showMt ? 11 : 0);
+    return padE(p.slot, 4) + " " + padE(p.name, nameW) + " "
+         + (showMt ? padE(matchup(p), 10) + " " : "") + padS(p.proj.toFixed(1), 5);
+  };
+  if (wide){
+    const half = Math.floor((cols - 2)/2);
+    L.push([S(padE(A.toUpperCase(), half) + "  " + padE(B.toUpperCase(), half))]);
+    L.push([S(rep("─", half) + "  " + rep("─", half), "dim")]);
+    for (const slot of STARTING_SLOTS)
+      L.push([S(padE(rowFor(res.lineups[A][slot], half), half) + "  " + padE(rowFor(res.lineups[B][slot], half), half))]);
+    L.push([S(rep("─", half) + "  " + rep("─", half), "dim")]);
+    const tl = t => padE("PROJECTED TOTAL", half - 6) + padS(res.projTotal[t].toFixed(1), 6);
+    L.push([S(padE(tl(A), half) + "  " + padE(tl(B), half), "muted")]);
+  } else {
+    for (const t of [A, B]){
+      if (t === B) L.push([]);
+      L.push([S(padE(t.toUpperCase(), cols), "accent")]);
+      L.push([S(rep("─", cols), "dim")]);
+      for (const slot of STARTING_SLOTS) L.push([S(rowFor(res.lineups[t][slot], cols))]);
+      L.push([S(padE("PROJECTED TOTAL", cols - 6) + padS(res.projTotal[t].toFixed(1), 6), "muted")]);
+    }
+  }
+
+  /* ── win probability ── */
+  sectionHead(L, "WIN PROBABILITY", cols);
+  for (const t of [A, B]){
+    const pctTxt = (res.wp[t]*100).toFixed(1) + "%";
+    if (wide){
+      const bw = cols - 21 - 9;
+      L.push([S(padE(t, 21) + " "), ...barSegs(res.wp[t], bw), S("  " + padS(pctTxt, 6))]);
+    } else {
+      L.push([S(padE(t, cols - 7)), S(padS(pctTxt, 7), "accent")]);
+      L.push(barSegs(res.wp[t], cols));
+    }
+  }
+  L.push([]);
+  const fav = res.wp[A] >= res.wp[B] ? A : B;
+  const edge = Math.abs(res.wp[A] - res.wp[B])*100;
+  const tone = edge < 4 ? "a dead heat" : edge < 15 ? "a slight edge"
+             : edge < 35 ? "a comfortable edge" : "a commanding edge";
+  const sentence = edge < 4
+    ? "A dead heat — " + fav + " wins by just " + Math.abs(res.meanMargin).toFixed(1) + " points on average."
+    : fav + " holds " + tone + ", winning by " + Math.abs(res.meanMargin).toFixed(1) + " points on average.";
+  for (const w of wrapText(sentence, cols)) L.push(LN(w, "muted"));
+
+  /* ── score ranges ── */
+  sectionHead(L, "PROJECTED SCORE RANGES", cols);
+  const band = (s, a, b) => pct(s, a).toFixed(0) + " – " + pct(s, b).toFixed(0);
+  if (wide){
+    L.push([S(padE("", 21) + padS("PROJ", 7) + padS("MEDIAN", 8) + padS("LIKELY 25–75%", 16) + padS("RANGE 5–95%", 16), "muted")]);
+    for (const [t, s] of [[A, res.sa], [B, res.sb]])
+      L.push([S(padE(t, 21) + padS(res.projTotal[t].toFixed(1), 7) + padS(pct(s, 50).toFixed(1), 8)
+             + padS(band(s, 25, 75), 16) + padS(band(s, 5, 95), 16))]);
+  } else {
+    for (const [t, s] of [[A, res.sa], [B, res.sb]]){
+      if (t === B) L.push([]);
+      L.push([S(padE(t, cols), "accent")]);
+      const kv = (k, v) => L.push([S("  " + padE(k, cols - 2 - 14), "muted"), S(padS(v, 14))]);
+      kv("projected", res.projTotal[t].toFixed(1));
+      kv("median", pct(s, 50).toFixed(1));
+      kv("likely 25–75%", band(s, 25, 75));
+      kv("range 5–95%", band(s, 5, 95));
+    }
+  }
+
+  /* ── margin ── */
+  sectionHead(L, wide ? "MARGIN OF VICTORY  (" + A + " − " + B + ")" : "MARGIN OF VICTORY", cols);
+  histogram(L, res.margins, cols);
+  L.push([]);
+  for (const w of wrapText("Decided by 5 points or fewer in " + Math.round(res.closeFrac*100)
+        + "% of weeks · 30+ point blowout in " + Math.round(res.blowFrac*100) + "%.", cols))
+    L.push(LN(w, "muted"));
+
+  /* ── start / sit ── */
+  const call = res.call;
+  if (call){
+    sectionHead(L, "START / SIT VERDICT", cols);
+    for (const w of wrapText(call.team + " · " + call.slot + " slot · the projections are "
+          + Math.abs(call.dProj).toFixed(1) + " point apart", cols))
+      L.push(LN(w, "muted"));
+    L.push([]);
+    twoPlayer(L, res, call, cols);
+    L.push([]);
+
+    const keep = call.out, swapIn = call.in;
+    let head, body, cls;
+    if (call.significant){
+      cls = "accent";
+      if (call.dWp > 0){
+        head = "START " + swapIn.name.toUpperCase();
+        body = ["Benching " + keep.name + " for " + swapIn.name + " is worth " + pp(call.dWp*100)
+              + " pp of win probability (±" + pp(2*call.se*100).replace("+","") + " pp)."];
+      } else {
+        head = "STICK WITH " + keep.name.toUpperCase();
+        body = ["Starting " + swapIn.name + " instead costs " + pp(Math.abs(call.dWp)*100).replace("+","")
+              + " pp of win probability (±" + pp(2*call.se*100).replace("+","") + " pp)."];
+      }
+      body.push("The swap changes the result in " + call.flipped.toLocaleString() + " of "
+              + res.sims.toLocaleString() + " simulated weeks, and the losses outnumber the gains.");
+    } else {
+      cls = "warn";
+      head = "TRUE COIN FLIP — DEFAULT TO " + keep.name.toUpperCase();
+      body = ["The gap is " + pp(call.dWp*100) + " pp against an error bar of ±"
+            + pp(2*call.se*100).replace("+","") + " pp, so the simulation cannot separate them.",
+              "Break the tie on news, not math: whoever has the better late-week injury and weather report."];
+    }
+    verdictBox(L, cols, head, body, cls);
+    L.push([]);
+
+    const cvIn = swapIn.std/swapIn.proj, cvKeep = keep.std/keep.proj;
+    const riskier = cvIn > cvKeep ? swapIn : keep, steadier = riskier === swapIn ? keep : swapIn;
+    const why = Math.abs(cvIn - cvKeep) < 0.03
+      ? "Why: these two carry near-identical risk profiles (" + Math.round(cvKeep*100) + "% and "
+        + Math.round(cvIn*100) + "% coefficient of variation), so there is no ceiling-vs-floor tradeoff to "
+        + "exploit — the call rests on the " + Math.abs(call.dProj).toFixed(1) + "-point projection edge alone."
+      : "Why: " + riskier.name + " is the boom/bust side (" + Math.round((riskier.std/riskier.proj)*100)
+        + "% coefficient of variation vs " + Math.round((steadier.std/steadier.proj)*100) + "% for "
+        + steadier.name + "). Moving to " + swapIn.name + " takes " + call.team + " from "
+        + (call.wpBefore*100).toFixed(1) + "% to " + (call.wpAfter*100).toFixed(1) + "% — the wider range "
+        + (call.dWp > 0 ? "earns" : "does not earn") + " its ceiling here.";
+    for (const w of wrapText(why, cols)) L.push(LN(w, "muted"));
+  }
+
+  /* ── biggest edge ── */
+  const best = res.best;
+  if (best && best !== call && best.dWp > 0 && best.significant){
+    sectionHead(L, "BIGGEST EDGE ON THE BOARD", cols);
+    L.push(LN(best.team + " · " + best.slot + " slot", "muted"));
+    L.push([]);
+    twoPlayer(L, res, best, cols);
+    L.push([]);
+    verdictBox(L, cols, "START " + best.in.name.toUpperCase(),
+      ["Over " + best.out.name + ", worth " + pp(best.dWp*100) + " pp of win probability (±"
+        + pp(2*best.se*100).replace("+","") + " pp) — the single biggest gain available to either roster.",
+       best.in.name + " is projected " + best.dProj.toFixed(1) + " points higher and swings "
+        + best.flipped.toLocaleString() + " of " + res.sims.toLocaleString() + " simulated weeks."], "accent");
+  }
+
+  /* ── other close calls ── */
+  const others = res.swaps.filter(s => s !== call && Math.abs(s.dProj) <= 2.5)
+                          .sort((x, y) => Math.abs(x.dProj) - Math.abs(y.dProj)).slice(0, 4);
+  if (others.length){
+    sectionHead(L, "OTHER CLOSE CALLS", cols);
+    if (wide){
+      L.push([S(padE("TEAM", 19) + " " + padE("SLOT", 5) + " " + padE("STARTING", 19) + " "
+             + padE("ALTERNATIVE", 19) + padS("Δ WIN%", 7), "muted")]);
+      for (const s of others){
+        const d = Math.abs(s.dWp*100) < 0.05 ? 0 : s.dWp*100;
+        L.push([S(padE(s.team, 19) + " " + padE(s.slot, 5) + " " + padE(s.out.name, 19) + " " + padE(s.in.name, 19)),
+                S(padS(pp(d) + (s.significant ? "*" : " "), 7), s.significant ? "accent" : "")]);
+      }
+    } else {
+      for (const s of others){
+        const d = Math.abs(s.dWp*100) < 0.05 ? 0 : s.dWp*100;
+        L.push([S(padE(s.team + " · " + s.slot, cols - 8), "muted"),
+                S(padS(pp(d) + (s.significant ? "*" : " "), 8), s.significant ? "accent" : "")]);
+        L.push([S("  " + padE(s.out.name + " → " + s.in.name, cols - 2))]);
+      }
+    }
+    L.push([]);
+    for (const w of wrapText("* statistically separable at 2 standard errors; the rest are noise.", cols))
+      L.push(LN(w, "dim"));
+  }
+
+  /* ── provenance footer ── */
+  L.push([]);
+  L.push(LN(rep("─", cols), "dim"));
+  for (const w of wrapText(res.sims.toLocaleString() + " sims · seed " + res.seed
+        + " · lognormal skill scoring · common random numbers", cols))
+    L.push(LN(w, "muted"));
+  const tallyTxt = Object.entries(res.tally).map(([k, v]) => v + " " + k).join(" · ");
+  if (tallyTxt)
+    for (const w of wrapText("projections: " + tallyTxt, cols)){
+      const i = w.indexOf("ESTIMATE-UNVERIFIED");
+      if (i < 0) L.push(LN(w));
+      else L.push([S(w.slice(0, i)), S("ESTIMATE-UNVERIFIED", "warn"), S(w.slice(i + 19))]);
+    }
+  if (res.unverified.length)
+    for (const w of wrapText("! " + res.unverified.length + " of these are UNVERIFIED ESTIMATES, not consensus data: "
+          + res.unverified.join(", ") + ".", cols))
+      L.push(LN(w, "warn"));
+  return L;
+}
+
+function twoPlayer(L, res, sw, cols){
+  const rows = [[sw.out, sw.wpBefore, "currently starting"], [sw.in, sw.wpAfter, "on the bench"]];
+  const boomOf = p => Math.round(res.boom[p.id]*100) + "%";
+  /* 24+6+6+7+9 = 52 for the table, plus 3 and the longest tag (18) = 73. */
+  if (cols >= 73){
+    L.push([S(padE("", 24) + padS("PROJ", 6) + padS("STD", 6) + padS("BOOM%", 7) + padS("WIN PROB", 9), "muted")]);
+    for (const [p, w, tag] of rows)
+      L.push([S(padE(p.name, 24) + padS(p.proj.toFixed(1), 6) + padS(p.std.toFixed(1), 6)
+             + padS(boomOf(p), 7) + padS((w*100).toFixed(1) + "%", 9)), S("   " + tag, "dim")]);
+  } else if (cols >= 52){
+    L.push([S(padE("", 24) + padS("PROJ", 6) + padS("STD", 6) + padS("BOOM%", 7) + padS("WIN PROB", 9), "muted")]);
+    for (const [p, w, tag] of rows){
+      L.push([S(padE(p.name, 24) + padS(p.proj.toFixed(1), 6) + padS(p.std.toFixed(1), 6)
+             + padS(boomOf(p), 7) + padS((w*100).toFixed(1) + "%", 9))]);
+      L.push([S(padE("  " + tag, cols), "dim")]);
+    }
+  } else {
+    for (const [p, w, tag] of rows){
+      L.push([S(padE(p.name, cols - 8)), S(padS((w*100).toFixed(1) + "%", 8), "accent")]);
+      L.push([S(padE("  proj " + p.proj.toFixed(1) + "  std " + p.std.toFixed(1)
+             + "  boom " + boomOf(p), cols), "dim")]);
+      L.push([S(padE("  " + tag, cols), "dim")]);
+    }
+  }
+}
+</script>
+<script id="ui">
+/* ══ ui ══ */
+const KEY = "fantasy-sim-v1";
+const $ = id => document.getElementById(id);
+const clone = o => JSON.parse(JSON.stringify(o));
+const uid = () => "p" + Math.random().toString(36).slice(2, 9);
+
+const state = { roster: clone(DEFAULT_ROSTER), activeTeam: null, open: null };
+let lastResult = null;
+
+function teamsOf(r){ const t = []; for (const p of r) if (!t.includes(p.team)) t.push(p.team); return t; }
+
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify({
+    roster: state.roster, seed: $("seed").value, sims: $("sims").value })); } catch (e) {}
+}
+function restore(){
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
+  if (!s || !Array.isArray(s.roster) || !s.roster.length) return;
+  state.roster = s.roster.map(p => Object.assign({ id: uid() }, p));
+  if (s.seed) $("seed").value = s.seed;
+  if (s.sims) $("sims").value = s.sims;
+}
+
+/* ── validation ── */
+function validate(r){
+  const errs = [];
+  const teams = teamsOf(r);
+  if (teams.length !== 2) errs.push("Need exactly 2 teams, found " + teams.length + ".");
+  for (const p of r){
+    if (!String(p.name || "").trim()) errs.push("A player on " + p.team + " has no name.");
+    if (!POSITIONS.includes(p.pos)) errs.push(p.name + ": position must be one of " + POSITIONS.join(", ") + ".");
+    if (!(p.proj > 0)) errs.push(p.name + ": projection must be greater than 0.");
+    if (!(p.std >= 0)) errs.push(p.name + ": std cannot be negative.");
+    if (p.slot !== "BN" && !(ELIGIBLE[p.pos] || []).includes(p.slot))
+      errs.push(p.name + " (" + p.pos + ") cannot fill the " + p.slot + " slot.");
+  }
+  for (const t of teams.slice(0, 2)){
+    for (const slot of STARTING_SLOTS){
+      const n = r.filter(p => p.team === t && p.slot === slot).length;
+      if (n === 0) errs.push(t + ": " + slot + " slot is empty.");
+      if (n > 1)   errs.push(t + ": " + n + " players in the " + slot + " slot.");
+    }
+  }
+  return errs.slice(0, 8);
+}
+function refreshValidity(){
+  const errs = validate(state.roster);
+  const box = $("errors"); box.textContent = "";
+  for (const e of errs){ const d = document.createElement("div"); d.textContent = e; box.appendChild(d); }
+  $("run").disabled = errs.length > 0;
+  return errs.length === 0;
+}
+
+/* ── editor ── */
+function renderTabs(){
+  const tabs = $("teamTabs"); tabs.textContent = "";
+  const ts = teamsOf(state.roster);
+  if (!state.activeTeam || !ts.includes(state.activeTeam)) state.activeTeam = ts[0];
+  for (const t of ts){
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = t; b.setAttribute("role", "tab");
+    b.setAttribute("aria-selected", String(t === state.activeTeam));
+    b.onclick = () => { state.activeTeam = t; state.open = null; renderTabs(); renderRoster(); };
+    tabs.appendChild(b);
+  }
+}
+
+function field(labelText, el){
+  const l = document.createElement("label");
+  const s = document.createElement("span"); s.textContent = labelText;
+  l.appendChild(s); l.appendChild(el); return l;
+}
+function inp(type, value, oninput, mode){
+  const e = document.createElement("input");
+  e.type = type; e.value = value;
+  if (mode) e.inputMode = mode;
+  if (type === "number") e.step = "0.1";
+  e.oninput = () => oninput(e.value);
+  return e;
+}
+function sel(options, value, onchange){
+  const e = document.createElement("select");
+  for (const o of options){
+    const op = document.createElement("option");
+    op.value = o; op.textContent = o; if (o === value) op.selected = true;
+    e.appendChild(op);
+  }
+  e.onchange = () => onchange(e.value);
+  return e;
+}
+
+/* Editing the numbers invalidates the shipped provenance, so the row stops
+   claiming to be verified consensus data. */
+function touched(p){ p.source = "edited"; }
+
+function setSlot(p, slot){
+  if (slot !== "BN"){
+    const occ = state.roster.find(q => q.team === p.team && q.slot === slot && q !== p);
+    if (occ) occ.slot = "BN";
+  }
+  p.slot = slot;
+}
+
+function rowEl(p){
+  const wrap = document.createElement("div"); wrap.className = "row";
+  const head = document.createElement("button");
+  head.type = "button"; head.className = "rowhead";
+  head.setAttribute("aria-expanded", String(state.open === p.id));
+
+  const slot = document.createElement("span");
+  slot.className = "slot" + (p.slot === "BN" ? " bn" : ""); slot.textContent = p.slot;
+  const nm = document.createElement("span"); nm.className = "nm"; nm.textContent = p.name;
+  const mt = document.createElement("span"); mt.className = "mt";
+  mt.textContent = p.nfl ? p.nfl + " " + p.opp : "";
+  const pj = document.createElement("span");
+  pj.className = "pj" + (String(p.source || "").toUpperCase().startsWith("ESTIMATE") ? " est" : "");
+  pj.textContent = Number(p.proj).toFixed(1);
+  head.append(slot, nm, mt, pj);
+  head.onclick = () => { state.open = state.open === p.id ? null : p.id; renderRoster(); };
+  wrap.appendChild(head);
+
+  if (state.open === p.id){
+    const e = document.createElement("div"); e.className = "edit";
+    const nameF = field("NAME", inp("text", p.name, v => { p.name = v; nm.textContent = v; touch(); }));
+    nameF.className = "full";
+    e.appendChild(nameF);
+    e.appendChild(field("POS", sel(POSITIONS, p.pos, v => {
+      p.pos = v; touched(p);
+      if (p.slot !== "BN" && !(ELIGIBLE[v] || []).includes(p.slot)) p.slot = "BN";
+      touch(); renderRoster();
+    })));
+    e.appendChild(field("SLOT", sel(["BN"].concat(ELIGIBLE[p.pos] || []), p.slot, v => {
+      setSlot(p, v); touch(); renderRoster();
+    })));
+    e.appendChild(field("NFL", inp("text", p.nfl, v => { p.nfl = v.toUpperCase(); touch(); })));
+    e.appendChild(field("OPP", inp("text", p.opp, v => { p.opp = v; touch(); })));
+    e.appendChild(field("PROJ", inp("number", p.proj, v => {
+      p.proj = parseFloat(v); touched(p); pj.textContent = (parseFloat(v) || 0).toFixed(1);
+      pj.classList.remove("est"); touch();
+    }, "decimal")));
+    e.appendChild(field("STD", inp("number", p.std, v => { p.std = parseFloat(v); touched(p); touch(); }, "decimal")));
+    const rm = document.createElement("button");
+    rm.type = "button"; rm.className = "rm"; rm.textContent = "REMOVE";
+    rm.onclick = () => {
+      state.roster = state.roster.filter(q => q !== p);
+      state.open = null; touch(); renderRoster();
+    };
+    const rmw = document.createElement("label");
+    const sp = document.createElement("span"); sp.textContent = " ";
+    rmw.append(sp, rm);
+    e.appendChild(rmw);
+    wrap.appendChild(e);
+  }
+  return wrap;
+}
+
+function renderRoster(){
+  const list = $("rosterList"); list.textContent = "";
+
+  const nameRow = document.createElement("div"); nameRow.className = "edit";
+  const f = field("TEAM NAME", inp("text", state.activeTeam, v => {
+    const old = state.activeTeam;
+    if (!v.trim()) return;
+    for (const p of state.roster) if (p.team === old) p.team = v;
+    state.activeTeam = v; touch(); renderTabs();
+  }));
+  f.className = "full"; nameRow.appendChild(f); list.appendChild(nameRow);
+
+  const mine = state.roster.filter(p => p.team === state.activeTeam);
+  const ordered = STARTING_SLOTS.map(s => mine.find(p => p.slot === s)).filter(Boolean)
+    .concat(mine.filter(p => p.slot === "BN"));
+  for (const p of ordered) list.appendChild(rowEl(p));
+  refreshValidity();
+}
+
+function touch(){ save(); refreshValidity(); }
+
+/* ── CSV ── */
+function parseCSV(text){
+  const rows = []; let row = [], f = "", q = false;
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (q){
+      if (c === '"'){ if (text[i+1] === '"'){ f += '"'; i++; } else q = false; }
+      else f += c;
+    }
+    else if (c === '"') q = true;
+    else if (c === ","){ row.push(f); f = ""; }
+    else if (c === "\n"){ row.push(f); f = ""; rows.push(row); row = []; }
+    else if (c !== "\r") f += c;
+  }
+  if (f !== "" || row.length){ row.push(f); rows.push(row); }
+  return rows.filter(r => r.some(x => String(x).trim() !== ""));
+}
+const csvEsc = s => /[",\n]/.test(String(s ?? "")) ? '"' + String(s).replace(/"/g, '""') + '"' : String(s ?? "");
+const COLS = ["fantasy_team","slot","player","pos","team","opp","proj","std","source"];
+
+function toCSV(){
+  const out = [COLS.join(",")];
+  for (const p of state.roster)
+    out.push([p.team, p.slot, p.name, p.pos, p.nfl, p.opp, p.proj, p.std, p.source || ""].map(csvEsc).join(","));
+  return out.join("\n") + "\n";
+}
+function fromCSV(text){
+  const rows = parseCSV(text);
+  if (rows.length < 2) throw new Error("CSV needs a header row and at least one player.");
+  const head = rows[0].map(h => h.trim());
+  const need = ["fantasy_team","slot","player","pos","proj","std"];
+  for (const c of need) if (!head.includes(c)) throw new Error("CSV is missing the '" + c + "' column.");
+  const idx = c => head.indexOf(c);
+  return rows.slice(1).map(r => ({
+    id: uid(),
+    team: r[idx("fantasy_team")].trim(), slot: r[idx("slot")].trim(),
+    name: r[idx("player")].trim(),      pos:  r[idx("pos")].trim(),
+    nfl:  idx("team") >= 0 ? r[idx("team")].trim() : "",
+    opp:  idx("opp")  >= 0 ? r[idx("opp")].trim()  : "",
+    proj: parseFloat(r[idx("proj")]), std: parseFloat(r[idx("std")]),
+    source: idx("source") >= 0 ? (r[idx("source")] || "").trim() : ""
+  }));
+}
+
+/* ── report painting ── */
+function paint(lines){
+  const pre = $("report"); pre.textContent = "";
+  const frag = document.createDocumentFragment();
+  lines.forEach((segs, i) => {
+    if (i) frag.appendChild(document.createTextNode("\n"));
+    for (const s of segs){
+      if (!s.c) frag.appendChild(document.createTextNode(s.t));
+      else {
+        const el = document.createElement("span");
+        el.className = s.c; el.textContent = s.t;   // textContent: names are user data
+        frag.appendChild(el);
+      }
+    }
+  });
+  pre.appendChild(frag);
+}
+/* Generate the report at the width that actually exists rather than shrinking
+   78 columns until it is unreadable. */
+function measureCols(){
+  const pre = $("report");
+  const probe = document.createElement("span");
+  probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre";
+  probe.textContent = "0".repeat(80);
+  pre.appendChild(probe);
+  const cw = probe.getBoundingClientRect().width / 80;
+  probe.remove();
+  const avail = pre.clientWidth || 320;
+  return Math.max(34, Math.min(78, Math.floor(avail / cw)));
+}
+function draw(){ if (lastResult) paint(renderReport(lastResult, measureCols())); }
+
+async function run(){
+  if (!refreshValidity()) return;
+  const btn = $("run");
+  btn.disabled = true; btn.textContent = "RUNNING…";
+  await new Promise(r => setTimeout(r, 16));   // yields a paint; unlike rAF it still fires when hidden
+  try {
+    lastResult = simulate(state.roster, parseInt($("sims").value, 10), parseInt($("seed").value, 10) || 0);
+    $("reportPanel").hidden = false;
+    draw();
+    $("reportPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (err){
+    $("errors").textContent = "";
+    const d = document.createElement("div"); d.textContent = "Simulation failed: " + err.message;
+    $("errors").appendChild(d);
+  } finally { btn.textContent = "RUN"; refreshValidity(); }
+}
+
+/* ── footer ── */
+function renderFooter(){
+  const f = $("foot"); f.textContent = "";
+  const a = document.createElement("a");
+  a.href = "https://github.com/cbroomew/fantasy-sim";
+  a.textContent = "source on github"; a.rel = "noopener";
+  f.appendChild(a);
+  if (ROOM_URL){
+    const sep = document.createElement("span"); sep.className = "sep"; sep.textContent = "·";
+    const r = document.createElement("a");
+    r.href = ROOM_URL; r.textContent = "Join the room 🔒";
+    r.rel = "noopener"; r.target = "_blank";
+    f.append(sep, r);
+  }
+  const br = document.createElement("div");
+  br.textContent = "Runs entirely in your browser. Numbers differ slightly from the sim.py CLI — same statistics, different draws.";
+  br.style.cssText = "margin-top:8px;font-size:10px;line-height:1.7";
+  f.appendChild(br);
+}
+
+/* ── boot ── */
+$("snapshotNote").textContent = SNAPSHOT;
+restore(); renderTabs(); renderRoster(); renderFooter();
+
+$("run").onclick = run;
+$("seed").onchange = save;
+$("sims").onchange = save;
+$("btnAdd").onclick = () => {
+  state.roster.push({ id: uid(), team: state.activeTeam, slot: "BN", name: "New Player",
+                      pos: "WR", nfl: "", opp: "", proj: 10, std: 5.2, source: "edited" });
+  state.open = state.roster[state.roster.length - 1].id;
+  touch(); renderRoster();
+};
+$("btnReset").onclick = () => {
+  if (!confirm("Discard your edits and restore the shipped verified projections?")) return;
+  try { localStorage.removeItem(KEY); } catch (e) {}
+  state.roster = clone(DEFAULT_ROSTER); state.open = null; state.activeTeam = null;
+  renderTabs(); renderRoster();
+};
+$("btnCsv").onclick = () => {
+  const p = $("csvPanel"); p.hidden = !p.hidden;
+  if (!p.hidden && !$("csvText").value) $("csvText").value = toCSV();
+};
+$("btnCsvFill").onclick = () => { $("csvText").value = toCSV(); };
+$("btnCsvLoad").onclick = () => {
+  try {
+    const r = fromCSV($("csvText").value);
+    if (teamsOf(r).length !== 2) throw new Error("CSV must contain exactly 2 teams.");
+    state.roster = r; state.open = null; state.activeTeam = null;
+    touch(); renderTabs(); renderRoster();
+  } catch (err){
+    $("errors").textContent = "";
+    const d = document.createElement("div"); d.textContent = err.message;
+    $("errors").appendChild(d);
+  }
+};
+$("btnCsvDownload").onclick = () => {
+  const blob = new Blob([toCSV()], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "projections.csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+let rt = null;
+addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(draw, 120); });
+</script>
+
+</body>
+</html>

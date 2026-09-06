@@ -18,6 +18,51 @@ No dependencies — Python 3 standard library only. No install step, no virtuale
 > demonstrate the format — replace it with your own league's projections before
 > drawing any conclusion from the output.
 
+## Web app
+
+**https://cbroomew.github.io/fantasy-sim/**
+
+The same simulator as a single self-contained page — `index.html`, no server, no
+build step, no CDN, no dependencies. It works offline once loaded. Both lineups
+are editable, projections and CSV round-trip with `sim.py`, and the report is
+the same terminal scoreboard.
+
+It is **phone-first**. The CLI report is 78 columns; a 375px phone fits about
+42. Rather than shrink the text until it is unreadable, the page measures the
+character width actually available and generates the report at that many
+columns, switching to stacked layouts below 76 — side-by-side lineups become
+sequential, wide tables become key/value blocks, and the margin histogram
+rebins itself to fit.
+
+### The browser numbers are not identical to the CLI's
+
+`sim.py` uses Python's Mersenne Twister; the browser uses `sfc32` seeded through
+`splitmix32`. Same distributions, same common-random-numbers guarantee, but a
+given seed produces **different draws** in each. Run both at 800,000 sims and
+they converge on the same answer — the featured call in the bundled matchup
+lands at `-0.39 pp` in Python and `-0.355 ± 0.062 pp` in the browser — but the
+digits in any single run will differ, and the PNG cards in `launch-assets/` come
+from Python.
+
+Keeping two implementations means they can drift. `tools/parity.js` is the
+guard: it pulls the DOM-free `<script>` blocks out of `index.html`, runs them in
+Node, checks the embedded roster still matches `projections.csv`, and prints the
+win probability and verdict for comparison.
+
+```bash
+node tools/parity.js 100000 1234     # browser core
+python3 sim.py --sims 100000         # compare by eye
+```
+
+### Editing and provenance
+
+Editing a row's projection, std or position flips its `source` to `edited`, and
+the footer tally counts it. Without that the report would keep claiming
+"18 consensus" over figures you typed yourself — exactly the drift the `source`
+column exists to prevent. **Reset** restores the shipped verified snapshot.
+Edits persist in `localStorage`; if that is unavailable the app still runs, it
+just forgets between visits.
+
 ## What it does
 
 For each simulated week it draws a score for every starter, sums the nine
@@ -179,3 +224,6 @@ and a couple of different `--seed` values before trusting it.
   not the jointly optimal lineup.
 - **No in-game state**, injuries, weather, or late-breaking news. The CSV is the
   whole world.
+- **The CLI and the web app are separate implementations** of the same model. A
+  fix to one does not reach the other; `tools/parity.js` detects divergence but
+  cannot prevent it.
