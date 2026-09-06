@@ -27,6 +27,14 @@ build step, no CDN, no dependencies. It works offline once loaded. Both lineups
 are editable, projections and CSV round-trip with `sim.py`, and the report is
 the same terminal scoreboard.
 
+It defaults to a light "stat sheet" theme — near-white ground, rich black
+monospace, green for bars and verdicts, amber for the provenance warning — with
+a ☀️/🌙 toggle in the header for the original dark palette. The choice persists
+in `localStorage` and is applied before first paint, so a dark-mode visitor
+never gets a white flash. In the light theme every text colour clears WCAG AA
+(4.5:1) against the surface it actually sits on, including inside the tinted
+verdict callouts, and rules clear the 3:1 non-text threshold.
+
 It is **phone-first**. The CLI report is 78 columns; a 375px phone fits about
 42. Rather than shrink the text until it is unreadable, the page measures the
 character width actually available and generates the report at that many

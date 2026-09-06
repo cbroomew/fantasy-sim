@@ -4,91 +4,124 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Monte Carlo Matchup Simulator</title>
+<meta name="theme-color" content="#fafaf8">
+<script>try{var t=localStorage.getItem("fantasy-sim-theme");if(t==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
 <meta name="description" content="Head-to-head fantasy football matchup simulator. Monte Carlo with real error bars and coin-flip honesty when calls are inseparable.">
 <style>
+/* Light is the default; [data-theme="dark"] on <html> swaps the tokens.
+   Every text colour below is AA (>=4.5:1) on its own background; --dim is
+   rules and box drawing only, held to the 3:1 non-text threshold. */
 :root{
+  --bg:#fafaf8; --panel:#ffffff; --edge:#e5e5e0; --edge2:#efefea;
+  --field:#ffffff; --text:#16171a; --muted:#5a5e66; --dim:#787e86; --track:#dde0e4;
+  --accent:#077a42; --warn:#8a5a00; --danger:#b3261e;
+  --ca-bg:#eaf5ee; --cw-bg:#fdf3e0; --hdr-bg:#f2f2ee;
+  --tab-on-bg:#eaf5ee; --tab-on-edge:#077a42;
+  --btn-bg:#077a42; --btn-fg:#ffffff; --btn-off-bg:#dfe3e0; --btn-off-fg:#7b8280;
+  --note-bg:#fdf3e0; --note-fg:#6b4a08; --rm-bg:#fdeceb; --rm-fg:#9c2620; --rm-edge:#f3d2cf;
+  --shadow:0 1px 2px rgba(20,20,20,.05); --bar:rgba(250,250,248,.97);
+  color-scheme:light;
+}
+[data-theme="dark"]{
   --bg:#0d0d0d; --panel:#131313; --edge:#262626; --edge2:#1c1c1c;
-  --text:#e2e2e2; --muted:#8a8a8a; --dim:#484848; --track:#272727;
+  --field:#0b0b0b; --text:#e2e2e2; --muted:#8a8a8a; --dim:#484848; --track:#272727;
   --accent:#4ade80; --warn:#f5b301; --danger:#f87171;
-  --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,"Cascadia Mono","Roboto Mono",monospace;
+  --ca-bg:#0f2417; --cw-bg:#241b06; --hdr-bg:#161616;
+  --tab-on-bg:#0f2417; --tab-on-edge:#2b5c3d;
+  --btn-bg:#4ade80; --btn-fg:#06210f; --btn-off-bg:#243026; --btn-off-fg:#5c6b60;
+  --note-bg:#191408; --note-fg:#d9cba6; --rm-bg:#1a0f0f; --rm-fg:#c86a6a; --rm-edge:#3a1f1f;
+  --shadow:none; --bar:rgba(13,13,13,.96);
+  color-scheme:dark;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{
-  background:var(--bg); color:var(--text); font-family:var(--mono);
+  background:var(--bg); color:var(--text);
+  font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,"Cascadia Mono","Roboto Mono",monospace;
   font-size:14px; line-height:1.5; -webkit-text-size-adjust:100%;
   padding-bottom:calc(84px + env(safe-area-inset-bottom));
 }
 .wrap{max-width:760px;margin:0 auto;padding:20px 16px 8px}
-h1{font-size:19px;line-height:1.25;letter-spacing:.06em;margin:0 0 6px;color:var(--accent);font-weight:600}
-h2{font-size:12px;letter-spacing:.16em;margin:0;color:var(--text);font-weight:600}
+.hrow{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+h1{font-size:19px;line-height:1.25;letter-spacing:.06em;margin:0 0 6px;color:var(--accent);font-weight:700}
+h2{font-size:12px;letter-spacing:.16em;margin:0;color:var(--text);font-weight:700}
 .sub{color:var(--muted);margin:0 0 14px;font-size:12.5px}
 .note{
-  border-left:2px solid var(--warn); background:#191408; color:#d9cba6;
-  padding:9px 11px; margin:0 0 20px; font-size:11.5px; line-height:1.55; border-radius:0 5px 5px 0;
+  border-left:3px solid var(--warn); background:var(--note-bg); color:var(--note-fg);
+  padding:9px 11px; margin:0 0 20px; font-size:11.5px; line-height:1.55; border-radius:0 6px 6px 0;
 }
-.panel{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:14px;margin-bottom:14px}
+.panel{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)}
 .panelhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
 .tools{display:flex;gap:6px}
-button{font-family:var(--mono);cursor:pointer;border-radius:7px;transition:border-color .12s,color .12s}
+button{font-family:inherit;cursor:pointer;border-radius:7px;transition:border-color .12s,color .12s,background .12s}
+.tt{
+  flex:0 0 auto;width:44px;height:44px;border-radius:11px;font-size:17px;line-height:1;
+  background:var(--panel);border:1px solid var(--edge);box-shadow:var(--shadow);
+}
+.tt:hover{border-color:var(--accent)}
 .tools button,.add,.csvbtn{
-  background:#1b1b1b;color:var(--muted);border:1px solid var(--edge);
+  background:var(--panel);color:var(--muted);border:1px solid var(--edge);
   font-size:11px;letter-spacing:.09em;padding:8px 11px;min-height:36px;
 }
-.tools button:hover,.add:hover,.csvbtn:hover{color:var(--text);border-color:#3a3a3a}
+.tools button:hover,.add:hover,.csvbtn:hover{color:var(--accent);border-color:var(--accent)}
 .tabs{display:flex;gap:6px;margin-bottom:12px}
 .tabs button{
-  flex:1;background:#161616;color:var(--muted);border:1px solid var(--edge);
+  flex:1;background:var(--bg);color:var(--muted);border:1px solid var(--edge);
   padding:10px 8px;min-height:44px;font-size:11.5px;letter-spacing:.05em;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.tabs button[aria-selected="true"]{background:#0f2417;color:var(--accent);border-color:#2b5c3d}
+.tabs button[aria-selected="true"]{background:var(--tab-on-bg);color:var(--accent);border-color:var(--tab-on-edge);font-weight:700}
 .row{border-bottom:1px solid var(--edge2)}
 .row:last-of-type{border-bottom:0}
 .rowhead{
   display:grid;grid-template-columns:44px 1fr auto auto;gap:8px;align-items:center;
   width:100%;background:none;border:0;color:var(--text);
-  padding:11px 2px;min-height:48px;text-align:left;font-size:13px;
+  padding:11px 2px;min-height:48px;text-align:left;font-size:13px;font-family:inherit;
 }
-.rowhead:hover{background:#171717}
-.slot{color:var(--accent);font-size:10.5px;letter-spacing:.06em}
-.slot.bn{color:var(--dim)}
+.rowhead:hover{background:var(--edge2)}
+.slot{color:var(--accent);font-size:10.5px;letter-spacing:.06em;font-weight:700}
+.slot.bn{color:var(--muted);font-weight:400}
 .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mt{color:var(--dim);font-size:10.5px}
-.pj{color:var(--text);font-variant-numeric:tabular-nums;min-width:42px;text-align:right}
+.mt{color:var(--muted);font-size:10.5px}
+.pj{color:var(--text);font-variant-numeric:tabular-nums;min-width:42px;text-align:right;font-weight:700}
 .est{color:var(--warn)}
 .edit{padding:4px 2px 14px;display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .edit label{display:flex;flex-direction:column;gap:4px;font-size:10px;color:var(--muted);letter-spacing:.08em}
 .edit .full{grid-column:1/-1}
-input,select{
-  font-family:var(--mono);font-size:16px; /* 16px stops iOS Safari zooming on focus */
-  background:#0b0b0b;color:var(--text);border:1px solid var(--edge);
+input,select,textarea{
+  font-family:inherit;font-size:16px; /* 16px stops iOS Safari zooming on focus */
+  background:var(--field);color:var(--text);border:1px solid var(--edge);
   border-radius:6px;padding:9px 10px;min-height:42px;width:100%;
 }
-input:focus,select:focus{outline:none;border-color:var(--accent)}
-.rm{background:#1a0f0f;color:#c86a6a;border:1px solid #3a1f1f;font-size:11px;padding:9px;min-height:42px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+.rm{background:var(--rm-bg);color:var(--rm-fg);border:1px solid var(--rm-edge);font-size:11px;padding:9px;min-height:42px}
 .errors{margin-top:12px;font-size:11.5px;color:var(--danger);line-height:1.7}
-.errors div::before{content:"! ";color:var(--danger)}
-#csvPanel textarea{
-  width:100%;height:190px;background:#0b0b0b;color:var(--text);
-  border:1px solid var(--edge);border-radius:8px;padding:11px;
-  font-family:var(--mono);font-size:12px;line-height:1.5;resize:vertical;white-space:pre;
-}
+.errors div::before{content:"! "}
+#csvPanel textarea{height:190px;font-size:12px;line-height:1.5;resize:vertical;white-space:pre;min-height:0}
 .csvrow{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap}
 .report{padding:16px 12px;overflow:hidden}
-#report{
-  margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.5;
-  white-space:pre;overflow:hidden;
-}
+#report{margin:0;font-size:12.5px;line-height:1.5;overflow:hidden}
+#report .ln{white-space:pre}
+#report .ln:empty::after{content:"\00a0"}
 #report .dim{color:var(--dim)}
 #report .muted{color:var(--muted)}
-#report .accent{color:var(--accent)}
-#report .warn{color:var(--warn)}
+#report .accent{color:var(--accent);font-weight:700}
+#report .warn{color:var(--warn);font-weight:700}
 #report .track{color:var(--track)}
+/* Verdict boxes read as highlighted callouts rather than ASCII frames: the
+   box-drawing verticals break apart at this line-height anyway. */
+#report .callout{
+  border-left:3px solid var(--accent);background:var(--ca-bg);
+  border-radius:0 8px 8px 0;padding:10px 12px;margin:8px 0;
+}
+#report .callout.cw{border-left-color:var(--warn);background:var(--cw-bg)}
+#report .callout.hdr{
+  border:1px solid var(--edge);border-left:1px solid var(--edge);
+  background:var(--hdr-bg);border-radius:10px;padding:12px;margin:0 0 4px;
+}
 .runbar{
   position:fixed;left:0;right:0;bottom:0;z-index:20;
-  background:rgba(13,13,13,.96);border-top:1px solid var(--edge);
-  backdrop-filter:blur(8px);
+  background:var(--bar);border-top:1px solid var(--edge);backdrop-filter:blur(8px);
   padding:10px 14px calc(10px + env(safe-area-inset-bottom));
   display:flex;gap:9px;align-items:center;
 }
@@ -97,15 +130,15 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .runbar .f.seed{width:82px}
 .runbar .f.sims{width:96px}
 #run{
-  flex:1;background:var(--accent);color:#06210f;border:0;font-weight:700;
+  flex:1;background:var(--btn-bg);color:var(--btn-fg);border:0;font-weight:700;font-family:inherit;
   font-size:15px;letter-spacing:.14em;min-height:52px;border-radius:9px;
 }
-#run:disabled{background:#243026;color:#5c6b60;cursor:not-allowed}
+#run:disabled{background:var(--btn-off-bg);color:var(--btn-off-fg);cursor:not-allowed}
 #run:not(:disabled):active{transform:translateY(1px)}
-footer{color:var(--dim);font-size:11px;text-align:center;padding:18px 0 26px;line-height:1.9}
+footer{color:var(--muted);font-size:11px;text-align:center;padding:18px 0 26px;line-height:1.9}
 footer a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--edge)}
 footer a:hover{color:var(--accent);border-color:var(--accent)}
-.sep{color:var(--edge);margin:0 7px}
+.sep{color:var(--dim);margin:0 7px}
 @media (max-width:359px){
   .wrap{padding:16px 10px 8px}
   .panel{padding:12px 10px}
@@ -123,7 +156,10 @@ footer a:hover{color:var(--accent);border-color:var(--accent)}
 <body>
 <div class="wrap">
   <header>
-    <h1>MONTE CARLO MATCHUP SIMULATOR</h1>
+    <div class="hrow">
+      <h1>MONTE CARLO MATCHUP SIMULATOR</h1>
+      <button class="tt" id="themeToggle" type="button" aria-label="Switch to dark theme">🌙</button>
+    </div>
     <p class="sub">Head-to-head fantasy football, simulated 10,000 times.</p>
     <p class="note" id="snapshotNote"></p>
   </header>
@@ -443,14 +479,14 @@ function sectionHead(L, title, cols){
 }
 
 function verdictBox(L, cols, head, body, cls){
-  const inner = cols - 2, textW = inner - 6;
-  L.push([S("┏" + rep("━", inner) + "┓", "dim")]);
-  L.push([S("┃", "dim"), S(padE(" ▶  " + head, inner), cls), S("┃", "dim")]);
-  L.push([S("┃", "dim"), S(rep(" ", inner)), S("┃", "dim")]);
-  for (const para of body)
-    for (const w of wrapText(para, textW))
-      L.push([S("┃", "dim"), S(padE("    " + w, inner)), S("┃", "dim")]);
-  L.push([S("┗" + rep("━", inner) + "┛", "dim")]);
+  /* A CSS callout rather than an ASCII frame: the box-drawing verticals break
+     into dashes at this line-height, and a tinted block reads better on paper. */
+  const w = cols - 4;
+  const tag = "callout" + (cls === "warn" ? " cw" : "");
+  const add = segs => { segs.cls = tag; L.push(segs); };
+  wrapText(head, w - 4).forEach((t, i) => add([S((i ? "    " : "▶  ") + t, cls)]));
+  add([]);
+  for (const para of body) for (const t of wrapText(para, w)) add([S(t)]);
 }
 
 function histogram(L, margins, cols){
@@ -485,19 +521,18 @@ function renderReport(res, cols){
   const [A, B] = res.teams;
 
   /* ── header ── */
-  const inner = cols - 2;
-  L.push([S("┌" + rep("─", inner) + "┐", "dim")]);
-  L.push([S("│", "dim"), S(ctr("MONTE CARLO MATCHUP SIMULATOR", inner), "accent"), S("│", "dim")]);
+  const inner = cols - 4;
+  const addH = segs => { segs.cls = "callout hdr"; L.push(segs); };
+  addH([S(ctr("MONTE CARLO MATCHUP SIMULATOR", inner), "accent")]);
   const vs = A + "  vs.  " + B;
   if (vs.length <= inner){
-    L.push([S("│", "dim"), S(ctr(vs, inner), "muted"), S("│", "dim")]);
+    addH([S(ctr(vs, inner), "muted")]);
   } else {
-    L.push([S("│", "dim"), S(ctr(A, inner), "muted"), S("│", "dim")]);
-    L.push([S("│", "dim"), S(ctr("vs.", inner), "dim"), S("│", "dim")]);
-    L.push([S("│", "dim"), S(ctr(B, inner), "muted"), S("│", "dim")]);
+    addH([S(ctr(A, inner), "muted")]);
+    addH([S(ctr("vs.", inner), "muted")]);
+    addH([S(ctr(B, inner), "muted")]);
   }
-  L.push([S("│", "dim"), S(ctr(res.sims.toLocaleString() + " simulations", inner), "muted"), S("│", "dim")]);
-  L.push([S("└" + rep("─", inner) + "┘", "dim")]);
+  addH([S(ctr(res.sims.toLocaleString() + " simulations", inner), "muted")]);
 
   /* ── lineups ── */
   sectionHead(L, "STARTING LINEUPS", cols);
@@ -664,7 +699,7 @@ function renderReport(res, cols){
     }
     L.push([]);
     for (const w of wrapText("* statistically separable at 2 standard errors; the rest are noise.", cols))
-      L.push(LN(w, "dim"));
+      L.push(LN(w, "muted"));
   }
 
   /* ── provenance footer ── */
@@ -695,20 +730,20 @@ function twoPlayer(L, res, sw, cols){
     L.push([S(padE("", 24) + padS("PROJ", 6) + padS("STD", 6) + padS("BOOM%", 7) + padS("WIN PROB", 9), "muted")]);
     for (const [p, w, tag] of rows)
       L.push([S(padE(p.name, 24) + padS(p.proj.toFixed(1), 6) + padS(p.std.toFixed(1), 6)
-             + padS(boomOf(p), 7) + padS((w*100).toFixed(1) + "%", 9)), S("   " + tag, "dim")]);
+             + padS(boomOf(p), 7) + padS((w*100).toFixed(1) + "%", 9)), S("   " + tag, "muted")]);
   } else if (cols >= 52){
     L.push([S(padE("", 24) + padS("PROJ", 6) + padS("STD", 6) + padS("BOOM%", 7) + padS("WIN PROB", 9), "muted")]);
     for (const [p, w, tag] of rows){
       L.push([S(padE(p.name, 24) + padS(p.proj.toFixed(1), 6) + padS(p.std.toFixed(1), 6)
              + padS(boomOf(p), 7) + padS((w*100).toFixed(1) + "%", 9))]);
-      L.push([S(padE("  " + tag, cols), "dim")]);
+      L.push([S(padE("  " + tag, cols), "muted")]);
     }
   } else {
     for (const [p, w, tag] of rows){
       L.push([S(padE(p.name, cols - 8)), S(padS((w*100).toFixed(1) + "%", 8), "accent")]);
       L.push([S(padE("  proj " + p.proj.toFixed(1) + "  std " + p.std.toFixed(1)
-             + "  boom " + boomOf(p), cols), "dim")]);
-      L.push([S(padE("  " + tag, cols), "dim")]);
+             + "  boom " + boomOf(p), cols), "muted")]);
+      L.push([S(padE("  " + tag, cols), "muted")]);
     }
   }
 }
@@ -939,19 +974,26 @@ function fromCSV(text){
 /* ── report painting ── */
 function paint(lines){
   const pre = $("report"); pre.textContent = "";
-  const frag = document.createDocumentFragment();
-  lines.forEach((segs, i) => {
-    if (i) frag.appendChild(document.createTextNode("\n"));
+  let cur = null, box = pre;
+  for (const segs of lines){
+    const cls = segs.cls || null;
+    if (cls !== cur){
+      if (cls){ box = document.createElement("div"); box.className = cls; pre.appendChild(box); }
+      else box = pre;
+      cur = cls;
+    }
+    const ln = document.createElement("div");
+    ln.className = "ln";
     for (const s of segs){
-      if (!s.c) frag.appendChild(document.createTextNode(s.t));
+      if (!s.c) ln.appendChild(document.createTextNode(s.t));
       else {
         const el = document.createElement("span");
         el.className = s.c; el.textContent = s.t;   // textContent: names are user data
-        frag.appendChild(el);
+        ln.appendChild(el);
       }
     }
-  });
-  pre.appendChild(frag);
+    box.appendChild(ln);
+  }
 }
 /* Generate the report at the width that actually exists rather than shrinking
    78 columns until it is unreadable. */
@@ -1004,6 +1046,28 @@ function renderFooter(){
   br.style.cssText = "margin-top:8px;font-size:10px;line-height:1.7";
   f.appendChild(br);
 }
+
+/* ── theme ── */
+const THEME_KEY = "fantasy-sim-theme";
+let theme = "light";
+try { theme = localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light"; } catch (e) {}
+
+function applyTheme(t){
+  const root = document.documentElement;
+  if (t === "dark") root.setAttribute("data-theme", "dark");
+  else root.removeAttribute("data-theme");
+  const b = $("themeToggle");
+  b.textContent = t === "dark" ? "☀️" : "🌙";
+  b.setAttribute("aria-label", t === "dark" ? "Switch to light theme" : "Switch to dark theme");
+  const m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.content = t === "dark" ? "#0d0d0d" : "#fafaf8";
+}
+applyTheme(theme);
+$("themeToggle").onclick = () => {
+  theme = theme === "dark" ? "light" : "dark";
+  try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+  applyTheme(theme);
+};
 
 /* ── boot ── */
 $("snapshotNote").textContent = SNAPSHOT;
