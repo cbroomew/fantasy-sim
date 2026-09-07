@@ -71,6 +71,15 @@ column exists to prevent. **Reset** restores the shipped verified snapshot.
 Edits persist in `localStorage`; if that is unavailable the app still runs, it
 just forgets between visits.
 
+## Engine spec and self-audit
+
+[`ENGINE.md`](ENGINE.md) documents every distribution choice and why, the
+paired-comparison design, how the error bars are computed and whether they are
+calibrated (measured: 0.99), and what evidence would falsify each design
+choice. It is candid about the model's weaknesses — including one, the absence
+of any zero-score probability, that is demonstrably wrong and biases the engine
+toward overconfidence.
+
 ## What it does
 
 For each simulated week it draws a score for every starter, sums the nine
