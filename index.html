@@ -40,6 +40,7 @@
   --shadow:none; --bar:rgba(13,13,13,.96);
   color-scheme:dark;
 }
+[hidden]{display:none!important}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{
@@ -264,11 +265,9 @@ body.locked{overflow:hidden}
 <div class="ovl" id="overlay" hidden>
   <div class="ovl-card" role="dialog" aria-modal="true">
     <button class="ovl-x" id="ovlClose" type="button" aria-label="Close">&#10005;</button>
-    <div id="ovlBody"></div>
-  </div>
-</div>
+    <div id="ovlBody">
 
-<div id="tplWelcome" hidden>
+<div id="panWelcome">
   <h2>WELCOME 🏈</h2>
   <p class="lede">The whole thing, in three steps.</p>
   <ol class="steps">
@@ -280,7 +279,7 @@ body.locked{overflow:hidden}
   <p class="fine">You can reopen this any time with the <b>?</b> up top.</p>
 </div>
 
-<div id="tplHiw" hidden>
+<div id="panHiw" hidden>
   <h2>HOW IT WORKS</h2>
 
   <h3>What this actually does</h3>
@@ -309,6 +308,10 @@ body.locked{overflow:hidden}
   <p>Floor and ceiling are the 10th and 90th percentile of each player&rsquo;s own draws, taken by quickselect rather than a full sort.</p>
   <p>There is also a command-line version in the repo. It uses a different random number generator, so the same seed produces different draws &mdash; same statistics, different digits. Both converge on the same answer.</p>
   <p>The full spec &mdash; including a candid account of what the model gets wrong and what evidence would overturn each design choice &mdash; is in <a href="ENGINE.md" rel="noopener">ENGINE.md</a>. Source on <a href="https://github.com/cbroomew/fantasy-sim" rel="noopener">GitHub</a>.</p>
+</div>
+
+    </div>
+  </div>
 </div>
 
 <div class="tip" id="tip" hidden></div>
@@ -1399,17 +1402,22 @@ function renderFooter(){
 const WELCOME_KEY = "fantasy-sim-seen-welcome";
 let lastFocus = null;
 
-function openOverlay(tplId){
-  const body = $("ovlBody");
-  body.textContent = "";
-  for (const node of [...$(tplId).cloneNode(true).childNodes]) body.appendChild(node);
-  const h2 = body.querySelector("h2");
-  body.parentElement.setAttribute("aria-label", h2 ? h2.textContent : "Information");
-  const go = body.querySelector(".js-go");
-  if (go) go.onclick = closeOverlay;
+function openOverlay(which){
+  const wel = $("panWelcome"), hiw = $("panHiw");
+  wel.hidden = which !== "welcome";
+  hiw.hidden = which !== "hiw";
+  const shown = which === "hiw" ? hiw : wel;
+  const h2 = shown.querySelector("h2");
+  document.querySelector(".ovl-card").setAttribute("aria-label", h2 ? h2.textContent : "Information");
   lastFocus = document.activeElement;
   $("overlay").hidden = false;
   document.body.classList.add("locked");
+  /* the overlay is its own scroll container and keeps its offset between
+     opens, so a short panel after a long one would open scrolled past its
+     own content and look blank */
+  $("overlay").scrollTop = 0;
+  document.querySelector(".ovl-card").scrollTop = 0;
+  const go = shown.querySelector(".js-go");
   (go || $("ovlClose")).focus();
 }
 function closeOverlay(){
@@ -1417,8 +1425,9 @@ function closeOverlay(){
   document.body.classList.remove("locked");
   if (lastFocus && lastFocus.focus) lastFocus.focus();
 }
-$("helpBtn").onclick  = () => openOverlay("tplWelcome");
-$("hiwBtn").onclick   = () => openOverlay("tplHiw");
+document.querySelectorAll(".js-go").forEach(b => { b.onclick = closeOverlay; });
+$("helpBtn").onclick  = () => openOverlay("welcome");
+$("hiwBtn").onclick   = () => openOverlay("hiw");
 $("ovlClose").onclick = closeOverlay;
 $("overlay").onclick  = e => { if (e.target === $("overlay")) closeOverlay(); };
 addEventListener("keydown", e => { if (e.key === "Escape" && !$("overlay").hidden) closeOverlay(); });
@@ -1428,7 +1437,7 @@ addEventListener("keydown", e => { if (e.key === "Escape" && !$("overlay").hidde
 let seenWelcome = false;
 try { seenWelcome = localStorage.getItem(WELCOME_KEY) === "1"; } catch (e) {}
 if (!seenWelcome){
-  openOverlay("tplWelcome");
+  openOverlay("welcome");
   try { localStorage.setItem(WELCOME_KEY, "1"); } catch (e) {}
 }
 
