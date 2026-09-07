@@ -398,8 +398,11 @@ def main():
                 body = ["Starting %s instead costs %s pp of win probability "
                         "(±%s pp)." % (swap_in.name, pp(abs(call.d_wp) * 100).lstrip("+"),
                                        pp(2 * call.se * 100).lstrip("+"))]
-            body.append("The swap changes the result in %d of %s simulated weeks, and "
-                        "the losses outnumber the gains." % (call.flipped, format(args.sims, ",")))
+            body.append("The swap changes the result in %s of %s simulated weeks, and "
+                        "the %s outnumber the %s."
+                        % (format(call.flipped, ","), format(args.sims, ","),
+                           "gains" if call.d_wp > 0 else "losses",
+                           "losses" if call.d_wp > 0 else "gains"))
         else:
             head = "TRUE COIN FLIP — DEFAULT TO %s" % keep.name.upper()
             body = ["The gap is %s pp against an error bar of ±%s pp, so the "

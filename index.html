@@ -793,7 +793,8 @@ function renderReport(res, cols){
               + " pp of win probability (±" + pp(2*call.se*100).replace("+","") + " pp)."];
       }
       body.push("The swap changes the result in " + call.flipped.toLocaleString() + " of "
-              + res.sims.toLocaleString() + " simulated weeks, and the losses outnumber the gains.");
+              + res.sims.toLocaleString() + " simulated weeks, and the "
+              + (call.dWp > 0 ? "gains outnumber the losses." : "losses outnumber the gains."));
     } else {
       cls = "warn";
       head = "TRUE COIN FLIP — DEFAULT TO " + keep.name.toUpperCase();
