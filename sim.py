@@ -365,66 +365,73 @@ def main():
     swaps = (evaluate_swaps(name_a, lineups[name_a], benches[name_a], tot_b, samples, flags_a)
              + evaluate_swaps(name_b, lineups[name_b], benches[name_b], tot_a, samples, flags_b))
     call = min(swaps, key=lambda s: (round(abs(s.d_proj), 2), -s.out.proj,
-                                     s.team, s.slot, s.inn.name))
+                                     s.team, s.slot, s.inn.name)) if swaps else None
 
-    banner("START / SIT VERDICT  —  closest call on the board")
-    p("  %s · %s slot · the projections are %.1f point apart"
-      % (call.team, call.slot, abs(call.d_proj)))
-    p()
-    p("  %-24s %6s %6s %7s %9s" % ("", "PROJ", "STD", "BOOM%", "WIN PROB"))
-    for who, wp, tag in ((call.out, call.wp_before, "currently starting"),
-                         (call.inn, call.wp_after, "on the bench")):
-        boom = sum(1 for v in samples[who.name] if v >= who.proj * 1.5) / args.sims
-        p("  %-24s %6.1f %6.1f %6.0f%% %8.1f%%   %s"
-          % (who.name[:24], who.proj, who.std, boom * 100, wp * 100, tag))
-    p()
+    if call is None:
+        banner("START / SIT VERDICT")
+        for line in textwrap.wrap(
+                "No bench players were supplied, so there is no lineup change to test and "
+                "no start/sit verdict to give. Add bench players to the CSV to get one.", W - 4):
+            p("  " + line)
+    else:
+        banner("START / SIT VERDICT  —  closest call on the board")
+        p("  %s · %s slot · the projections are %.1f point apart"
+          % (call.team, call.slot, abs(call.d_proj)))
+        p()
+        p("  %-24s %6s %6s %7s %9s" % ("", "PROJ", "STD", "BOOM%", "WIN PROB"))
+        for who, wp, tag in ((call.out, call.wp_before, "currently starting"),
+                             (call.inn, call.wp_after, "on the bench")):
+            boom = sum(1 for v in samples[who.name] if v >= who.proj * 1.5) / args.sims
+            p("  %-24s %6.1f %6.1f %6.0f%% %8.1f%%   %s"
+              % (who.name[:24], who.proj, who.std, boom * 100, wp * 100, tag))
+        p()
 
-    keep, swap_in = call.out, call.inn
-    if call.significant:
-        if call.d_wp > 0:
-            head = "START %s" % swap_in.name.upper()
-            body = ["Benching %s for %s is worth %s pp of win probability "
-                    "(±%s pp)." % (keep.name, swap_in.name, pp(call.d_wp * 100),
-                                   pp(2 * call.se * 100).lstrip("+"))]
+        keep, swap_in = call.out, call.inn
+        if call.significant:
+            if call.d_wp > 0:
+                head = "START %s" % swap_in.name.upper()
+                body = ["Benching %s for %s is worth %s pp of win probability "
+                        "(±%s pp)." % (keep.name, swap_in.name, pp(call.d_wp * 100),
+                                       pp(2 * call.se * 100).lstrip("+"))]
+            else:
+                head = "STICK WITH %s" % keep.name.upper()
+                body = ["Starting %s instead costs %s pp of win probability "
+                        "(±%s pp)." % (swap_in.name, pp(abs(call.d_wp) * 100).lstrip("+"),
+                                       pp(2 * call.se * 100).lstrip("+"))]
+            body.append("The swap changes the result in %d of %s simulated weeks, and "
+                        "the losses outnumber the gains." % (call.flipped, format(args.sims, ",")))
         else:
-            head = "STICK WITH %s" % keep.name.upper()
-            body = ["Starting %s instead costs %s pp of win probability "
-                    "(±%s pp)." % (swap_in.name, pp(abs(call.d_wp) * 100).lstrip("+"),
-                                   pp(2 * call.se * 100).lstrip("+"))]
-        body.append("The swap changes the result in %d of %s simulated weeks, and "
-                    "the losses outnumber the gains." % (call.flipped, format(args.sims, ",")))
-    else:
-        head = "TRUE COIN FLIP — DEFAULT TO %s" % keep.name.upper()
-        body = ["The gap is %s pp against an error bar of ±%s pp, so the "
-                "simulation cannot separate them."
-                % (pp(call.d_wp * 100), pp(2 * call.se * 100).lstrip("+")),
-                "Break the tie on news, not math: whoever has the better late-week "
-                "injury and weather report."]
-    boxed(head, body)
+            head = "TRUE COIN FLIP — DEFAULT TO %s" % keep.name.upper()
+            body = ["The gap is %s pp against an error bar of ±%s pp, so the "
+                    "simulation cannot separate them."
+                    % (pp(call.d_wp * 100), pp(2 * call.se * 100).lstrip("+")),
+                    "Break the tie on news, not math: whoever has the better late-week "
+                    "injury and weather report."]
+        boxed(head, body)
 
-    riskier = swap_in if swap_in.cv > keep.cv else keep
-    steadier = keep if riskier is swap_in else swap_in
-    if abs(swap_in.cv - keep.cv) < 0.03:
-        why = ("Why: these two carry near-identical risk profiles (%.0f%% and %.0f%% "
-               "coefficient of variation), so there is no ceiling-vs-floor tradeoff to "
-               "exploit — the call rests on the %.1f-point projection edge alone, which "
-               "moves %s from %.1f%% to %.1f%%."
-               % (keep.cv * 100, swap_in.cv * 100, abs(call.d_proj), call.team,
-                  call.wp_before * 100, call.wp_after * 100))
-    else:
-        why = ("Why: %s is the boom/bust side (%.0f%% coefficient of variation vs %.0f%% "
-               "for %s). %s sits at %.1f%% to win, and moving to %s takes that to %.1f%% "
-               "— the wider range %s its ceiling in a matchup this %s."
-               % (riskier.name, riskier.cv * 100, steadier.cv * 100, steadier.name,
-                  call.team, call.wp_before * 100, swap_in.name, call.wp_after * 100,
-                  "earns" if call.d_wp > 0 else "does not earn",
-                  "tight" if abs(call.wp_before - 0.5) < 0.1 else "lopsided"))
-    p()
-    for line in textwrap.wrap(why, INNER):
-        p("  " + line)
+        riskier = swap_in if swap_in.cv > keep.cv else keep
+        steadier = keep if riskier is swap_in else swap_in
+        if abs(swap_in.cv - keep.cv) < 0.03:
+            why = ("Why: these two carry near-identical risk profiles (%.0f%% and %.0f%% "
+                   "coefficient of variation), so there is no ceiling-vs-floor tradeoff to "
+                   "exploit — the call rests on the %.1f-point projection edge alone, which "
+                   "moves %s from %.1f%% to %.1f%%."
+                   % (keep.cv * 100, swap_in.cv * 100, abs(call.d_proj), call.team,
+                      call.wp_before * 100, call.wp_after * 100))
+        else:
+            why = ("Why: %s is the boom/bust side (%.0f%% coefficient of variation vs %.0f%% "
+                   "for %s). %s sits at %.1f%% to win, and moving to %s takes that to %.1f%% "
+                   "— the wider range %s its ceiling in a matchup this %s."
+                   % (riskier.name, riskier.cv * 100, steadier.cv * 100, steadier.name,
+                      call.team, call.wp_before * 100, swap_in.name, call.wp_after * 100,
+                      "earns" if call.d_wp > 0 else "does not earn",
+                      "tight" if abs(call.wp_before - 0.5) < 0.1 else "lopsided"))
+        p()
+        for line in textwrap.wrap(why, INNER):
+            p("  " + line)
 
     # ── the decision that actually matters ──
-    best = max(swaps, key=lambda s: s.d_wp)
+    best = max(swaps, key=lambda s: s.d_wp) if swaps else None
     if best is not call and best.d_wp > 0 and best.significant:
         banner("BIGGEST EDGE ON THE BOARD  —  points left on the bench")
         p("  %s · %s slot" % (best.team, best.slot))

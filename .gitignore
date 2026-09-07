@@ -5,3 +5,8 @@ __pycache__/
 # Private member matchup files pass through here and are deleted after
 # reporting. Never commit, never push.
 inbox/
+
+# Belt and braces: member matchup files must never be committed from anywhere
+# in the tree, not just inbox/.
+*matchup*.csv
+*_matchup*
