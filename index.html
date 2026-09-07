@@ -181,6 +181,16 @@ body.locked{overflow:hidden}
 .cta:active{transform:translateY(1px)}
 .fine{font-size:11px;color:var(--muted);text-align:center;margin:13px 0 0}
 
+/* ── share ── */
+.sharewrap{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0 4px}
+.sharebtn{
+  background:var(--btn-bg);color:var(--btn-fg);border:0;font-family:inherit;font-weight:700;
+  font-size:13px;letter-spacing:.07em;min-height:46px;padding:0 18px;border-radius:9px;
+}
+.sharebtn:disabled{opacity:.6;cursor:progress}
+.sharebtn:not(:disabled):active{transform:translateY(1px)}
+.sharemsg{font-size:11.5px;color:var(--muted)}
+
 /* ── plain-English helpers ── */
 .fhint{font-style:normal;font-size:10px;color:var(--muted);letter-spacing:0;line-height:1.45;margin-top:2px}
 .qm{background:none;border:1px solid var(--edge);color:var(--muted);border-radius:50%;
@@ -1121,6 +1131,194 @@ function fromCSV(text){
   }));
 }
 
+/* ── share card ────────────────────────────────────────────────────────────
+   Drawn by hand on a canvas rather than screenshotting the DOM: no library,
+   no CDN, and full control over typography. The report's monospace grid is
+   for terminal fidelity; a share card wants real hierarchy, so this is a
+   purpose-built layout rather than a reuse of renderReport(). */
+const SHARE_URL = "cbroomew.github.io/fantasy-sim";
+
+function themeInk(){
+  const cs = getComputedStyle(document.documentElement);
+  const v = n => cs.getPropertyValue(n).trim();
+  return { bg:v("--panel"), edge:v("--edge"), text:v("--text"), muted:v("--muted"),
+           dim:v("--dim"), track:v("--track"), accent:v("--accent"), warn:v("--warn") };
+}
+
+function shareCanvas(res){
+  const ink = themeInk();
+  const S = 2;                       // draw at 2x for a crisp phone image
+  const W = 560, PAD = 34;
+  const MONO = '"SFMono-Regular",ui-monospace,Menlo,Monaco,monospace';
+  const c = document.createElement("canvas");
+  const x = c.getContext("2d");
+  const [A, B] = res.teams;
+  const call = res.call;
+  const inner = W - PAD * 2;
+
+  /* measure first so the canvas is exactly as tall as the content */
+  const font = (px, w) => (w ? w + " " : "") + px + "px " + MONO;
+  const wrapAt = (txt, px, max) => {
+    x.font = font(px);
+    const words = String(txt).split(/\s+/); const out = []; let line = "";
+    for (const wd of words){
+      const t = line ? line + " " + wd : wd;
+      if (x.measureText(t).width <= max || !line) line = t; else { out.push(line); line = wd; }
+    }
+    if (line) out.push(line);
+    return out;
+  };
+
+  const bodyLines = call
+    ? wrapAt(call.significant
+        ? (call.dWp > 0
+            ? "Benching " + call.out.name + " for " + call.in.name + " is worth " + pp(call.dWp*100) + " pp of win probability."
+            : "Starting " + call.in.name + " instead costs " + pp(Math.abs(call.dWp)*100).replace("+","") + " pp of win probability (±" + pp(2*call.se*100).replace("+","") + " pp).")
+        : "The gap is inside the margin for error, so it is a true coin flip — go with the better injury report.",
+        15, inner)
+    : [];
+
+  let H = PAD;
+  H += 34 + 20 + 16;                        // brand + sub
+  H += (26 + 22 + 16) * 2;                  // two team blocks
+  H += 4 + 20;                              // rule
+  if (call){
+    H += 18 + 10;                           // context line
+    H += 28 + 8;                            // verdict head
+    H += bodyLines.length * 21 + 14;
+    H += 20 + 24 * 2 + 14;                  // player header + two rows
+  }
+  H += 4 + 16 + 18 + 18;                    // rule + two footer lines
+  H += PAD;
+
+  c.width = W * S; c.height = H * S;
+  x.scale(S, S);
+  x.textBaseline = "top";
+
+  x.fillStyle = ink.bg; x.fillRect(0, 0, W, H);
+  x.strokeStyle = ink.edge; x.lineWidth = 1;
+  x.strokeRect(0.5, 0.5, W - 1, H - 1);
+
+  let y = PAD;
+  const put = (t, px, col, weight, ty) => {
+    x.font = font(px, weight); x.fillStyle = col;
+    x.fillText(t, ty === "r" ? 0 : PAD, y);
+  };
+  const putR = (t, px, col, weight) => {
+    x.font = font(px, weight); x.fillStyle = col;
+    x.fillText(t, W - PAD - x.measureText(t).width, y);
+  };
+  /* both numeric columns right-align to fixed edges, or they collide */
+  const PROJ_X = W - PAD - 150, BAND_X = W - PAD;
+  const putAt = (t, px, col, rightX) => {
+    x.font = font(px); x.fillStyle = col;
+    x.fillText(t, rightX - x.measureText(t).width, y);
+  };
+  const rule = () => { x.fillStyle = ink.edge; x.fillRect(PAD, y, inner, 1); y += 1; };
+
+  put("THE MACHINE", 26, ink.accent, "700"); y += 34;
+  put("Broomiie’s Ball Knowers", 14, ink.muted); y += 20 + 16;
+
+  for (const t of [A, B]){
+    put(t.length > 30 ? t.slice(0, 29) + "…" : t, 16, ink.text, "700");
+    putR((res.wp[t]*100).toFixed(1) + "%", 16, ink.accent, "700");
+    y += 26;
+    const bw = inner, f = Math.round(bw * res.wp[t]);
+    x.fillStyle = ink.track; x.beginPath(); x.roundRect(PAD, y, bw, 14, 7); x.fill();
+    x.fillStyle = ink.accent; x.beginPath(); x.roundRect(PAD, y, f, 14, 7); x.fill();
+    y += 22 + 16;
+  }
+
+  y += 4; rule(); y += 20;
+
+  if (call){
+    put("START / SIT · " + call.team + " · " + call.slot, 12, ink.muted); y += 18 + 10;
+    const head = (call.significant
+      ? (call.dWp > 0 ? "START " + call.in.name.toUpperCase() : "STICK WITH " + call.out.name.toUpperCase())
+      : "TRUE COIN FLIP");
+    const hc = call.significant ? ink.accent : ink.warn;
+    x.font = font(21, "700"); x.fillStyle = hc;
+    let h = head; while (x.measureText("▶  " + h).width > inner && h.length > 6) h = h.slice(0, -2);
+    x.fillText("▶  " + h, PAD, y); y += 28 + 8;
+
+    for (const line of bodyLines){ put(line, 15, ink.muted); y += 21; }
+    y += 14;
+
+    putAt("PROJ", 11, ink.muted, PROJ_X);
+    putAt("BAD DAY – BEST DAY", 11, ink.muted, BAND_X);
+    y += 20;
+    for (const pl of [call.out, call.in]){
+      const bd = res.band[pl.id];
+      put(pl.name.length > 22 ? pl.name.slice(0, 21) + "…" : pl.name, 15, ink.text);
+      putAt(pl.proj.toFixed(1), 15, ink.muted, PROJ_X);
+      putAt(bd ? Math.round(bd.p10) + " – " + Math.round(bd.p90) : "", 15, ink.text, BAND_X);
+      y += 24;
+    }
+    y += 14;
+  }
+
+  y += 4; rule(); y += 16;
+  put("played " + res.sims.toLocaleString() + " times · seed " + res.seed, 12, ink.muted); y += 18;
+  put(SHARE_URL, 12, ink.accent); y += 18;
+  return c;
+}
+
+function shareStatus(msg){
+  const el = $("shareMsg");
+  if (el) el.textContent = msg || "";
+}
+
+async function shareVerdict(btn){
+  if (!lastResult) return;
+  btn.disabled = true; shareStatus("");
+  try {
+    const canvas = shareCanvas(lastResult);
+    const blob = await new Promise(r => canvas.toBlob(r, "image/png"));
+    if (!blob) throw new Error("could not render the image");
+    const file = new File([blob], "the-machine-verdict.png", { type: "image/png" });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })){
+      await navigator.share({ files: [file], title: "The Machine" });
+      shareStatus("Shared.");
+      return;
+    }
+    if (navigator.clipboard && window.ClipboardItem){
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+        shareStatus("Image copied to clipboard.");
+        return;
+      } catch (e) { /* fall through to download */ }
+    }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "the-machine-verdict.png";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    shareStatus("Image saved.");
+  } catch (err){
+    if (err && err.name === "AbortError") shareStatus("");   // user dismissed the sheet
+    else shareStatus("Couldn’t share: " + (err && err.message ? err.message : "unknown error"));
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* Sits directly under the verdict callout rather than at the foot of the
+   report, so it is where the thing you would share actually is. */
+function mountShareButton(){
+  const box = document.querySelector("#report .callout:not(.hdr)");
+  if (!box) return;
+  const wrap = document.createElement("div");
+  wrap.className = "sharewrap";
+  const btn = document.createElement("button");
+  btn.type = "button"; btn.className = "sharebtn"; btn.textContent = "Share verdict 📸";
+  btn.onclick = () => shareVerdict(btn);
+  const msg = document.createElement("span");
+  msg.className = "sharemsg"; msg.id = "shareMsg";
+  wrap.append(btn, msg);
+  box.insertAdjacentElement("afterend", wrap);
+}
+
 /* ── report painting ── */
 function paint(lines){
   const pre = $("report"); pre.textContent = "";
@@ -1158,7 +1356,7 @@ function measureCols(){
   const avail = pre.clientWidth || 320;
   return Math.max(34, Math.min(78, Math.floor(avail / cw)));
 }
-function draw(){ if (lastResult) paint(renderReport(lastResult, measureCols())); }
+function draw(){ if (lastResult){ paint(renderReport(lastResult, measureCols())); mountShareButton(); } }
 
 async function run(){
   if (!refreshValidity()) return;
