@@ -3,10 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Monte Carlo Matchup Simulator</title>
+<title>The Machine — Broomiie's Ball Knowers</title>
 <meta name="theme-color" content="#fafaf8">
 <script>try{var t=localStorage.getItem("fantasy-sim-theme");if(t==="dark")document.documentElement.setAttribute("data-theme","dark");}catch(e){}</script>
-<meta name="description" content="Head-to-head fantasy football matchup simulator. Monte Carlo with real error bars and coin-flip honesty when calls are inseparable.">
+<meta name="description" content="The Machine — Broomiie's Ball Knowers. Your fantasy matchup, played 10,000 times. Start/sit verdicts, win odds, and no fake confidence.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png" type="image/png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="The Machine">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
 /* Light is the default; [data-theme="dark"] on <html> swaps the tokens.
    Every text colour below is AA (>=4.5:1) on its own background; --dim is
@@ -139,6 +146,52 @@ footer{color:var(--muted);font-size:11px;text-align:center;padding:18px 0 26px;l
 footer a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--edge)}
 footer a:hover{color:var(--accent);border-color:var(--accent)}
 .sep{color:var(--dim);margin:0 7px}
+/* ── header extras ── */
+.hbtns{display:flex;gap:7px;flex:0 0 auto}
+header .sub{margin-bottom:5px}
+.hiwrow{margin:0 0 16px}
+.linkbtn{background:none;border:0;color:var(--accent);font-family:inherit;font-size:12px;
+  letter-spacing:.04em;padding:6px 0;min-height:34px;border-bottom:1px solid transparent}
+.linkbtn:hover{border-bottom-color:var(--accent)}
+
+/* ── overlay (welcome + how it works) ── */
+body.locked{overflow:hidden}
+.ovl{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.55);
+  display:flex;justify-content:center;padding:14px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.ovl-card{position:relative;margin:auto;width:100%;max-width:560px;
+  background:var(--panel);border:1px solid var(--edge);border-radius:14px;
+  padding:20px 18px 24px;box-shadow:0 14px 44px rgba(0,0,0,.34)}
+.ovl-x{position:absolute;top:7px;right:7px;width:42px;height:42px;border-radius:10px;
+  background:none;border:0;color:var(--muted);font-size:15px;line-height:1;font-family:inherit}
+.ovl-x:hover{color:var(--text)}
+#ovlBody h2{font-size:14px;letter-spacing:.15em;color:var(--accent);margin:0 0 12px;padding-right:44px}
+#ovlBody h3{font-size:12.5px;letter-spacing:.05em;color:var(--text);margin:22px 0 7px;font-weight:700}
+#ovlBody h3.nerd{margin-top:28px;padding-top:20px;border-top:1px solid var(--edge)}
+#ovlBody p{font-size:13px;line-height:1.68;color:var(--muted);margin:0 0 11px}
+#ovlBody p b{color:var(--text)}
+#ovlBody a{color:var(--accent)}
+#ovlBody code{background:var(--bg);border:1px solid var(--edge);border-radius:4px;
+  padding:1px 5px;font-size:12px;color:var(--text)}
+.lede{font-size:13px;color:var(--muted);margin:0 0 14px}
+.steps{margin:0 0 20px;padding-left:20px}
+.steps li{font-size:13px;line-height:1.65;color:var(--muted);margin-bottom:12px;padding-left:3px}
+.steps li b{color:var(--text)}
+.cta{width:100%;background:var(--btn-bg);color:var(--btn-fg);border:0;font-weight:700;
+  font-family:inherit;font-size:15px;letter-spacing:.08em;min-height:52px;border-radius:10px}
+.cta:active{transform:translateY(1px)}
+.fine{font-size:11px;color:var(--muted);text-align:center;margin:13px 0 0}
+
+/* ── plain-English helpers ── */
+.fhint{font-style:normal;font-size:10px;color:var(--muted);letter-spacing:0;line-height:1.45;margin-top:2px}
+.qm{background:none;border:1px solid var(--edge);color:var(--muted);border-radius:50%;
+  width:17px;height:17px;min-height:0;font-size:9.5px;line-height:1;padding:0;font-family:inherit}
+.qm:hover{color:var(--accent);border-color:var(--accent)}
+.runbar .f>span{display:flex;align-items:center;gap:4px}
+.tip{position:fixed;left:12px;right:12px;z-index:25;
+  bottom:calc(80px + env(safe-area-inset-bottom));
+  background:var(--panel);border:1px solid var(--accent);border-radius:10px;
+  padding:11px 13px;font-size:12px;line-height:1.5;color:var(--text);box-shadow:0 6px 20px rgba(0,0,0,.22)}
+
 @media (max-width:359px){
   .wrap{padding:16px 10px 8px}
   .panel{padding:12px 10px}
@@ -157,10 +210,14 @@ footer a:hover{color:var(--accent);border-color:var(--accent)}
 <div class="wrap">
   <header>
     <div class="hrow">
-      <h1>MONTE CARLO MATCHUP SIMULATOR</h1>
-      <button class="tt" id="themeToggle" type="button" aria-label="Switch to dark theme">🌙</button>
+      <h1>THE MACHINE</h1>
+      <div class="hbtns">
+        <button class="tt" id="helpBtn" type="button" aria-label="Show the welcome guide">?</button>
+        <button class="tt" id="themeToggle" type="button" aria-label="Switch to dark theme">🌙</button>
+      </div>
     </div>
-    <p class="sub">Head-to-head fantasy football, simulated 10,000 times.</p>
+    <p class="sub">Broomiie&rsquo;s Ball Knowers &middot; your matchup, played 10,000 times.</p>
+    <p class="hiwrow"><button class="linkbtn" id="hiwBtn" type="button">How it works &rarr;</button></p>
     <p class="note" id="snapshotNote"></p>
   </header>
 
@@ -180,7 +237,7 @@ footer a:hover{color:var(--accent);border-color:var(--accent)}
 
   <section class="panel" id="csvPanel" hidden>
     <div class="panelhead"><h2>CSV IMPORT / EXPORT</h2></div>
-    <p class="sub" style="margin-bottom:9px">Same columns as <code>projections.csv</code>, so lineups round-trip with <code>sim.py</code>.</p>
+    <p class="sub" style="margin-bottom:9px">Copy your lineup out, or paste one in. Same format the command-line version uses.</p>
     <textarea id="csvText" spellcheck="false" aria-label="CSV data"></textarea>
     <div class="csvrow">
       <button class="csvbtn" id="btnCsvLoad" type="button">LOAD FROM TEXT</button>
@@ -194,9 +251,60 @@ footer a:hover{color:var(--accent);border-color:var(--accent)}
   <footer id="foot"></footer>
 </div>
 
+<div class="ovl" id="overlay" hidden>
+  <div class="ovl-card" role="dialog" aria-modal="true">
+    <button class="ovl-x" id="ovlClose" type="button" aria-label="Close">&#10005;</button>
+    <div id="ovlBody"></div>
+  </div>
+</div>
+
+<div id="tplWelcome" hidden>
+  <h2>WELCOME 🏈</h2>
+  <p class="lede">The whole thing, in three steps.</p>
+  <ol class="steps">
+    <li><b>Put in your players.</b> Tap a team and enter your league&rsquo;s players and projections &mdash; or just hit RUN to see a demo.</li>
+    <li><b>Hit RUN.</b> The machine plays your matchup 10,000 times.</li>
+    <li><b>Read your verdicts.</b> Start/sit calls, win odds, floor and ceiling, and the biggest edge sitting on your bench.</li>
+  </ol>
+  <button class="cta js-go" type="button">Let&rsquo;s go 🏈</button>
+  <p class="fine">You can reopen this any time with the <b>?</b> up top.</p>
+</div>
+
+<div id="tplHiw" hidden>
+  <h2>HOW IT WORKS</h2>
+
+  <h3>What this actually does</h3>
+  <p>Nobody knows what your players will score on Sunday. So rather than guess once, the machine plays your matchup <b>10,000 times</b> &mdash; 10,000 alternate Sundays, each one a little different &mdash; and counts how often you win.</p>
+  <p>That&rsquo;s where your win odds come from. Not a hunch. A tally.</p>
+
+  <h3>Why it sometimes says &ldquo;coin flip&rdquo;</h3>
+  <p>Every number here comes with a margin for error. When two lineup choices are closer together than that margin, the machine says so instead of picking one anyway.</p>
+  <p>That&rsquo;s deliberate. A tool that always sounds confident is bluffing some of the time. This one would rather tell you the truth: <i>it genuinely doesn&rsquo;t matter &mdash; go with whoever&rsquo;s injury report you like better.</i></p>
+
+  <h3>Why it won&rsquo;t guess your roster</h3>
+  <p>Players get traded. A tool that &ldquo;remembers&rdquo; rosters goes stale the day someone changes teams, and you&rsquo;d never know &mdash; it would quietly simulate the wrong guy on the wrong team and hand you a confident answer.</p>
+  <p>So the machine knows nothing on its own. Every name, team and number comes from the data in front of you. If something&rsquo;s wrong you can see it, and fix it in one tap.</p>
+
+  <h3>The small print under your results</h3>
+  <p>That last line tallies where each projection came from. <b>consensus</b> came straight from a public projection table. <b>derived</b> was worked out from a season-long number. <b>ESTIMATE-UNVERIFIED</b> means nobody published one and it&rsquo;s a best guess &mdash; treat those with suspicion. <b>edited</b> means you typed it yourself.</p>
+  <p>It&rsquo;s there so the results never look more solid than the numbers underneath them.</p>
+
+  <h3>Floor and ceiling</h3>
+  <p>Every player row shows a range like <code>9&ndash;28</code>. That&rsquo;s his bad day to his best day: across those 10,000 Sundays he lands somewhere in that range about 8 times out of 10. The single projection is just the middle of it.</p>
+  <p>Two players can share a projection and have completely different ranges. Quite often, that <i>is</i> the start/sit decision.</p>
+
+  <h3 class="nerd">For the nerds 🤓</h3>
+  <p>It&rsquo;s a Monte Carlo simulation. Skill-position scores are drawn from a lognormal matched to each player&rsquo;s projection and standard deviation &mdash; right-skewed, floored at zero, because a receiver can drop 40 on you but never &minus;3. Kickers and defenses use a normal with a hard floor.</p>
+  <p>Every player gets his own fixed random stream, so when a bench swap is tested the other eight starters are bit-identical week to week. That makes it a paired comparison, which shrinks the error bar on a swap by about <b>6&times;</b> against two independent runs. The quoted bar is two standard errors of that paired difference, and it has been checked against the estimator&rsquo;s real spread &mdash; claimed over true comes out at <b>0.99</b>.</p>
+  <p>Floor and ceiling are the 10th and 90th percentile of each player&rsquo;s own draws, taken by quickselect rather than a full sort.</p>
+  <p>There is also a command-line version in the repo. It uses a different random number generator, so the same seed produces different draws &mdash; same statistics, different digits. Both converge on the same answer.</p>
+  <p>The full spec &mdash; including a candid account of what the model gets wrong and what evidence would overturn each design choice &mdash; is in <a href="ENGINE.md" rel="noopener">ENGINE.md</a>. Source on <a href="https://github.com/cbroomew/fantasy-sim" rel="noopener">GitHub</a>.</p>
+</div>
+
+<div class="tip" id="tip" hidden></div>
 <div class="runbar">
-  <label class="f seed">SEED<input id="seed" type="number" inputmode="numeric" value="1234"></label>
-  <label class="f sims">SIMS<select id="sims">
+  <label class="f seed"><span>SEED <button class="qm" type="button" data-tip="Keeps results repeatable — same seed, same numbers.">?</button></span><input id="seed" type="number" inputmode="numeric" value="1234"></label>
+  <label class="f sims"><span>SIMS <button class="qm" type="button" data-tip="How many times we play your matchup. More = steadier numbers.">?</button></span><select id="sims">
     <option value="1000">1,000</option>
     <option value="10000" selected>10,000</option>
     <option value="50000">50,000</option>
@@ -215,7 +323,7 @@ footer a:hover{color:var(--accent);border-color:var(--accent)}
    ───────────────────────────────────────────────────────────────────────── */
 const ROOM_URL = "https://whop.com/broomiie-s-ball-knowers/the-locker-room-62/";
 
-const SNAPSHOT = "The preloaded projections are a frozen snapshot verified 2026-09-04, not a live feed. Four rows are unverified estimates. Edit anything below, or load your own league's CSV.";
+const SNAPSHOT = "These are demo numbers, checked on 2026-09-04 and frozen there — not live. Four of them are educated guesses rather than published projections. Swap in your own league below, or just hit RUN to see it work.";
 
 const DEFAULT_ROSTER = [
   {"id": "p0", "team": "Gridiron Gamblers", "slot": "QB", "name": "Josh Allen", "pos": "QB", "nfl": "BUF", "opp": "@HOU", "proj": 19.5, "std": 6.4, "source": "consensus"},
@@ -547,7 +655,7 @@ function renderReport(res, cols){
   /* ── header ── */
   const inner = cols - 4;
   const addH = segs => { segs.cls = "callout hdr"; L.push(segs); };
-  addH([S(ctr("MONTE CARLO MATCHUP SIMULATOR", inner), "accent")]);
+  addH([S(ctr("THE MACHINE", inner), "accent")]);
   const vs = A + "  vs.  " + B;
   if (vs.length <= inner){
     addH([S(ctr(vs, inner), "muted")]);
@@ -556,7 +664,7 @@ function renderReport(res, cols){
     addH([S(ctr("vs.", inner), "muted")]);
     addH([S(ctr(B, inner), "muted")]);
   }
-  addH([S(ctr(res.sims.toLocaleString() + " simulations", inner), "muted")]);
+  addH([S(ctr("played " + res.sims.toLocaleString() + " times", inner), "muted")]);
 
   /* ── lineups ── */
   sectionHead(L, "STARTING LINEUPS", cols);
@@ -593,6 +701,9 @@ function renderReport(res, cols){
       L.push([S(padE("PROJECTED TOTAL", cols - 6) + padS(res.projTotal[t].toFixed(1), 6), "muted")]);
     }
   }
+  L.push([]);
+  for (const w of wrapText("10–90% is his bad day to his best day — he lands in that range about 8 weeks out of 10.", cols))
+    L.push(LN(w, "muted"));
 
   /* ── win probability ── */
   sectionHead(L, "WIN PROBABILITY", cols);
@@ -738,8 +849,7 @@ function renderReport(res, cols){
   /* ── provenance footer ── */
   L.push([]);
   L.push(LN(rep("─", cols), "dim"));
-  for (const w of wrapText(res.sims.toLocaleString() + " sims · seed " + res.seed
-        + " · lognormal skill scoring · common random numbers", cols))
+  for (const w of wrapText("played " + res.sims.toLocaleString() + " times · seed " + res.seed, cols))
     L.push(LN(w, "muted"));
   const tallyTxt = Object.entries(res.tally).map(([k, v]) => v + " " + k).join(" · ");
   if (tallyTxt)
@@ -850,10 +960,16 @@ function renderTabs(){
   }
 }
 
-function field(labelText, el){
+function field(labelText, el, hint){
   const l = document.createElement("label");
   const s = document.createElement("span"); s.textContent = labelText;
-  l.appendChild(s); l.appendChild(el); return l;
+  l.appendChild(s); l.appendChild(el);
+  if (hint){
+    const h = document.createElement("i");
+    h.className = "fhint"; h.textContent = hint;
+    l.appendChild(h);
+  }
+  return l;
 }
 function inp(type, value, oninput, mode){
   const e = document.createElement("input");
@@ -916,14 +1032,15 @@ function rowEl(p){
     })));
     e.appendChild(field("SLOT", sel(["BN"].concat(ELIGIBLE[p.pos] || []), p.slot, v => {
       setSlot(p, v); touch(); renderRoster();
-    })));
-    e.appendChild(field("NFL", inp("text", p.nfl, v => { p.nfl = v.toUpperCase(); touch(); })));
-    e.appendChild(field("OPP", inp("text", p.opp, v => { p.opp = v; touch(); })));
+    }), "starting spot, or bench"));
+    e.appendChild(field("NFL", inp("text", p.nfl, v => { p.nfl = v.toUpperCase(); touch(); }), "his NFL team"));
+    e.appendChild(field("OPP", inp("text", p.opp, v => { p.opp = v; touch(); }), "who he plays"));
     e.appendChild(field("PROJ", inp("number", p.proj, v => {
       p.proj = parseFloat(v); touched(p); pj.textContent = (parseFloat(v) || 0).toFixed(1);
       pj.classList.remove("est"); touch();
-    }, "decimal")));
-    e.appendChild(field("STD", inp("number", p.std, v => { p.std = parseFloat(v); touched(p); touch(); }, "decimal")));
+    }, "decimal"), "points he's projected to score"));
+    e.appendChild(field("STD", inp("number", p.std, v => { p.std = parseFloat(v); touched(p); touch(); }, "decimal"),
+                        "how boom-or-bust he is"));
     const rm = document.createElement("button");
     rm.type = "button"; rm.className = "rm"; rm.textContent = "REMOVE";
     rm.onclick = () => {
@@ -1075,10 +1192,63 @@ function renderFooter(){
     f.append(sep, r);
   }
   const br = document.createElement("div");
-  br.textContent = "Runs entirely in your browser. Numbers differ slightly from the sim.py CLI — same statistics, different draws.";
+  br.textContent = "Runs entirely in your browser — your lineup never leaves your phone.";
   br.style.cssText = "margin-top:8px;font-size:10px;line-height:1.7";
   f.appendChild(br);
 }
+
+/* ── welcome + how it works ── */
+const WELCOME_KEY = "fantasy-sim-seen-welcome";
+let lastFocus = null;
+
+function openOverlay(tplId){
+  const body = $("ovlBody");
+  body.textContent = "";
+  for (const node of [...$(tplId).cloneNode(true).childNodes]) body.appendChild(node);
+  const h2 = body.querySelector("h2");
+  body.parentElement.setAttribute("aria-label", h2 ? h2.textContent : "Information");
+  const go = body.querySelector(".js-go");
+  if (go) go.onclick = closeOverlay;
+  lastFocus = document.activeElement;
+  $("overlay").hidden = false;
+  document.body.classList.add("locked");
+  (go || $("ovlClose")).focus();
+}
+function closeOverlay(){
+  $("overlay").hidden = true;
+  document.body.classList.remove("locked");
+  if (lastFocus && lastFocus.focus) lastFocus.focus();
+}
+$("helpBtn").onclick  = () => openOverlay("tplWelcome");
+$("hiwBtn").onclick   = () => openOverlay("tplHiw");
+$("ovlClose").onclick = closeOverlay;
+$("overlay").onclick  = e => { if (e.target === $("overlay")) closeOverlay(); };
+addEventListener("keydown", e => { if (e.key === "Escape" && !$("overlay").hidden) closeOverlay(); });
+
+/* First load only. If storage is unavailable the card simply shows every time,
+   which is the harmless direction to fail in. */
+let seenWelcome = false;
+try { seenWelcome = localStorage.getItem(WELCOME_KEY) === "1"; } catch (e) {}
+if (!seenWelcome){
+  openOverlay("tplWelcome");
+  try { localStorage.setItem(WELCOME_KEY, "1"); } catch (e) {}
+}
+
+/* ── tap tips for the cramped run-bar labels ── */
+let tipTimer = null;
+document.addEventListener("click", e => {
+  const btn = e.target.closest("[data-tip]");
+  const tip = $("tip");
+  if (btn){
+    e.preventDefault(); e.stopPropagation();
+    tip.textContent = btn.dataset.tip;
+    tip.hidden = false;
+    clearTimeout(tipTimer);
+    tipTimer = setTimeout(() => { tip.hidden = true; }, 5000);
+  } else if (!tip.hidden){
+    tip.hidden = true;
+  }
+});
 
 /* ── theme ── */
 const THEME_KEY = "fantasy-sim-theme";

@@ -208,6 +208,10 @@ def print_lineups(name_a, lu_a, name_b, lu_b, bands):
     p("  %-*s  %-*s" % (half, "─" * half, half, "─" * half))
     tot = lambda lu: "%-33s %5.1f" % ("PROJECTED TOTAL", sum(x.proj for x in lu.values()))
     p("  %-*s  %-*s" % (half, tot(lu_a), half, tot(lu_b)))
+    p()
+    for line in textwrap.wrap("10–90% is his bad day to his best day — he lands in "
+                              "that range about 8 weeks out of 10.", W - 4):
+        p("  " + line)
 
 
 # ─── start/sit analysis ───────────────────────────────────────────────────────
@@ -306,9 +310,9 @@ def main():
     # ── header ──
     p()
     p("┌" + "─" * (W - 2) + "┐")
-    for line in ("MONTE CARLO MATCHUP SIMULATOR",
+    for line in ("THE MACHINE",
                  "%s   vs.   %s" % (name_a, name_b),
-                 "%s simulations · %s" % (format(args.sims, ","), args.week)):
+                 "played %s times · %s" % (format(args.sims, ","), args.week)):
         p("│" + line.center(W - 2) + "│")
     p("└" + "─" * (W - 2) + "┘")
 

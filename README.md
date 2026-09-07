@@ -18,9 +18,15 @@ No dependencies — Python 3 standard library only. No install step, no virtuale
 > demonstrate the format — replace it with your own league's projections before
 > drawing any conclusion from the output.
 
-## Web app
+## Web app — "The Machine"
 
 **https://cbroomew.github.io/fantasy-sim/**
+
+Branded for Broomiie's Ball Knowers, and written for someone arriving from a
+phone who has never seen a simulator before: a first-visit walkthrough, a plain
+English *How it works* panel with the maths kept below a "for the nerds" line,
+helper text on every field, and a web manifest so Add to Home Screen gives a
+proper icon and a full-screen launch.
 
 The same simulator as a single self-contained page — `index.html`, no server, no
 build step, no CDN, no dependencies. It works offline once loaded. Both lineups
