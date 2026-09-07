@@ -187,16 +187,22 @@ def boxed(head, body_lines):
     p("  ┗" + "━" * inner + "┛")
 
 
-def print_lineups(name_a, lu_a, name_b, lu_b):
+def print_lineups(name_a, lu_a, name_b, lu_b, bands):
     half = 40
+    head = "%s%7s %5s" % (" " * (half - 13), "10–90%", "PROJ")
 
     def rows(lu):
-        return ["%-4s %-18s %-10s %5.1f" % (s, lu[s].name[:18], lu[s].matchup, lu[s].proj)
-                for s in STARTING_SLOTS]
+        out = []
+        for s in STARTING_SLOTS:
+            lo, hi = bands[lu[s].name]
+            out.append("%-4s %-21s %7s %5.1f"
+                       % (s, lu[s].name[:21], "%d–%d" % (round(lo), round(hi)), lu[s].proj))
+        return out
 
     banner("STARTING LINEUPS")
     p("  %-*s  %-*s" % (half, name_a.upper(), half, name_b.upper()))
     p("  %-*s  %-*s" % (half, "─" * half, half, "─" * half))
+    p("  %-*s  %-*s" % (half, head, half, head))
     for ra, rb in zip(rows(lu_a), rows(lu_b)):
         p("  %-*s  %-*s" % (half, ra, half, rb))
     p("  %-*s  %-*s" % (half, "─" * half, half, "─" * half))
@@ -283,6 +289,12 @@ def main():
     samples = {x.name: draw_samples(x, args.sims, args.seed + i)
                for i, x in enumerate(players)}
 
+    # 10th/90th percentile of each player's own draws, for the lineup rows.
+    bands = {}
+    for x in players:
+        srt = sorted(samples[x.name])
+        bands[x.name] = (pct(srt, 10), pct(srt, 90))
+
     tot_a = total_scores(lineups[name_a], samples)
     tot_b = total_scores(lineups[name_b], samples)
     flags_a = win_flags(tot_a, tot_b)
@@ -300,7 +312,7 @@ def main():
         p("│" + line.center(W - 2) + "│")
     p("└" + "─" * (W - 2) + "┘")
 
-    print_lineups(name_a, lineups[name_a], name_b, lineups[name_b])
+    print_lineups(name_a, lineups[name_a], name_b, lineups[name_b], bands)
 
     # ── win probability ──
     banner("WIN PROBABILITY")

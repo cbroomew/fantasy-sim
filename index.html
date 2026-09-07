@@ -329,6 +329,28 @@ function winRate(a, b, n){
   for (let i = 0; i < n; i++) w += a[i] > b[i] ? 1 : (a[i] === b[i] ? 0.5 : 0);
   return w/n;
 }
+/* Order statistic by quickselect, in place on a scratch copy. Only two are
+   needed per player, so a full sort would be wasted work. */
+function nth(a, k){
+  let lo = 0, hi = a.length - 1;
+  while (lo < hi){
+    const p = a[(lo + hi) >> 1];
+    let i = lo, j = hi;
+    while (i <= j){
+      while (a[i] < p) i++;
+      while (a[j] > p) j--;
+      if (i <= j){ const t = a[i]; a[i] = a[j]; a[j] = t; i++; j--; }
+    }
+    if (k <= j) hi = j; else if (k >= i) lo = i; else break;
+  }
+  return a[k];
+}
+function bandOf(samples){
+  const a = Float32Array.from(samples), n = a.length;
+  return { p10: nth(a, Math.floor(0.10 * (n - 1))),
+           p90: nth(a, Math.floor(0.90 * (n - 1))) };
+}
+
 function pct(sorted, q){
   const k = (sorted.length - 1) * (q/100);
   const lo = Math.floor(k), hi = Math.ceil(k);
@@ -365,12 +387,14 @@ function simulate(roster, sims, seed){
 
   const samples = {};
   const boom = {};
+  const band = {};
   roster.forEach((p, i) => {
     const s = drawSamples(p, n, (seed + i*7919) | 0);
     samples[p.id] = s;
     let c = 0, thr = p.proj*1.5;
     for (let k = 0; k < n; k++) if (s[k] >= thr) c++;
     boom[p.id] = c/n;
+    band[p.id] = bandOf(s);          // 10th/90th percentile of this player's draws
   });
 
   const lineups = {}, benches = {};
@@ -437,7 +461,7 @@ function simulate(roster, sims, seed){
   for (const p of roster){ const k = (p.source || "").trim(); if (k) tally[k] = (tally[k]||0)+1; }
   const unverified = roster.filter(p => (p.source||"").toUpperCase().startsWith("ESTIMATE")).map(p => p.name);
 
-  return { teams:[A,B], lineups, benches, tot, wp, sa, sb, margins, boom, sims:n, seed,
+  return { teams:[A,B], lineups, benches, tot, wp, sa, sb, margins, boom, band, sims:n, seed,
            meanMargin: msum/n, closeFrac: close/n, blowFrac: blow/n,
            swaps, call, best, tally, unverified,
            projTotal: { [A]: sum9(lineups[A]), [B]: sum9(lineups[B]) } };
@@ -536,16 +560,24 @@ function renderReport(res, cols){
 
   /* ── lineups ── */
   sectionHead(L, "STARTING LINEUPS", cols);
-  const showMt = cols >= 46;
-  const rowFor = (p, w) => {
-    const nameW = w - 11 - (showMt ? 11 : 0);
-    return padE(p.slot, 4) + " " + padE(p.name, nameW) + " "
-         + (showMt ? padE(matchup(p), 10) + " " : "") + padS(p.proj.toFixed(1), 5);
+  /* slot(4) + name + band(7) + proj(5) and three separators == w. The tightest
+     case is a wide-mode half (38 cols), narrower than a phone, so a format that
+     fits there fits everywhere. */
+  const bandOf78 = p => {
+    const b = res.band[p.id];
+    return b ? Math.round(b.p10) + "–" + Math.round(b.p90) : "";
   };
+  const rowFor = (p, w) => {
+    const nameW = w - 19;
+    return padE(p.slot, 4) + " " + padE(p.name, nameW) + " "
+         + padS(bandOf78(p), 7) + " " + padS(p.proj.toFixed(1), 5);
+  };
+  const headFor = w => padE("", w - 13) + padS("10–90%", 7) + " " + padS("PROJ", 5);
   if (wide){
     const half = Math.floor((cols - 2)/2);
     L.push([S(padE(A.toUpperCase(), half) + "  " + padE(B.toUpperCase(), half))]);
     L.push([S(rep("─", half) + "  " + rep("─", half), "dim")]);
+    L.push([S(padE(headFor(half), half) + "  " + padE(headFor(half), half), "muted")]);
     for (const slot of STARTING_SLOTS)
       L.push([S(padE(rowFor(res.lineups[A][slot], half), half) + "  " + padE(rowFor(res.lineups[B][slot], half), half))]);
     L.push([S(rep("─", half) + "  " + rep("─", half), "dim")]);
@@ -556,6 +588,7 @@ function renderReport(res, cols){
       if (t === B) L.push([]);
       L.push([S(padE(t.toUpperCase(), cols), "accent")]);
       L.push([S(rep("─", cols), "dim")]);
+      L.push([S(headFor(cols), "muted")]);
       for (const slot of STARTING_SLOTS) L.push([S(rowFor(res.lineups[t][slot], cols))]);
       L.push([S(padE("PROJECTED TOTAL", cols - 6) + padS(res.projTotal[t].toFixed(1), 6), "muted")]);
     }

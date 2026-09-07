@@ -371,6 +371,11 @@ figures a user typed.
   weeks outside that fall off the axis rather than piling into the end bins.
   This is a display choice and it makes the tails look thinner than they are.
 - **Boom%.** Defined as P(score ≥ 1.5 × projection). The 1.5 is arbitrary.
+- **Floor/ceiling.** The `10–90%` column on each lineup row is the 10th and 90th
+  percentile of that player's own draws, taken by quickselect rather than a full
+  sort, and rounded to whole points. It is empirical, not analytic, though the
+  two agree: sampled and closed-form lognormal percentiles match to one decimal
+  at 200,000 sims. Rounding means a floor shown as `9` is anywhere in [8.5, 9.5).
 - **Close calls.** Swaps with |Δproj| ≤ 2.5, top four by projection gap. Both
   constants are arbitrary.
 
