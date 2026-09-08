@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Broomiie Machine Report — Week 1</title>
+<!-- ============================================================
+  BROOMIIE MACHINE REPORT — single-page blueprint (v3)
+  THE ONLY THING THAT CHANGES WEEK TO WEEK is the REPORT object
+  at the top of the <script> at the bottom of this file:
+  every word, number, and chart draws itself from it.
+  Ships as a hosted page (verdicts/weekN.html). For IG, screenshot
+  sections — the page is 1080 wide, feed-crop friendly.
+============================================================ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F1F5EE; --card:#FBFDF9; --panel:#F2F7F0; --line:#D9E2D5;
+    --ink:#152118; --muted:#67796C;
+    --turf:#178F47; --turf-soft:#DDF1E3; --track:#E2EAE0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:var(--paper)}
+  body{font-family:'Archivo',sans-serif;color:var(--ink);display:grid;place-items:start center;padding:24px 0}
+  .stage{width:1080px}
+  .card{
+    width:1080px;background:var(--card);
+    border:1px solid var(--line);border-radius:28px;
+    padding:56px 64px 48px;position:relative;overflow:hidden;
+  }
+  .card::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(to bottom,transparent 0 134px,var(--line) 134px 135px);
+    opacity:.5;mask-image:linear-gradient(to right,black 0,transparent 140px);
+    -webkit-mask-image:linear-gradient(to right,black 0,transparent 140px);
+  }
+  .card > *{position:relative}
+
+  .head{display:flex;align-items:baseline;justify-content:space-between}
+  .brand{font-family:'Anton';font-size:42px;line-height:1}
+  .brand small{font-family:'Archivo';font-weight:600;font-size:20px;color:var(--muted);margin-left:14px}
+  .week{font-weight:800;font-size:22px;padding:10px 22px;border-radius:999px;background:var(--panel);border:1px solid var(--line)}
+
+  .prose{font-size:24px;line-height:1.55;font-weight:500}
+  .prose + .prose{margin-top:14px}
+
+  .prob{margin-top:48px}
+  .h-label{font-size:24px;font-weight:600;color:var(--muted)}
+  .prob-nums{display:flex;justify-content:space-between;align-items:flex-end;margin-top:8px}
+  .pct{font-family:'Anton';font-size:118px;line-height:.95}
+  .pct.him{color:var(--turf)} .pct.opp{color:var(--ink);opacity:.4}
+  .who{font-size:24px;font-weight:700;color:var(--muted);margin-bottom:14px}
+  .bar{height:26px;border-radius:13px;background:var(--track);margin-top:20px;overflow:hidden}
+  .bar span{display:block;height:100%;background:var(--turf);border-radius:13px 0 0 13px}
+  .prob-meta{display:flex;justify-content:space-between;margin-top:14px;font-size:22px;color:var(--muted);font-weight:500}
+
+  .read{margin-top:34px}
+
+  .verdict{margin-top:44px;background:var(--turf-soft);border:1px solid #BCDBC6;border-left:10px solid var(--turf);border-radius:20px;padding:38px 44px 34px}
+  .verdict.big{background:var(--panel);border-color:var(--line);border-left-color:var(--ink)}
+  .verdict-tag{font-size:24px;font-weight:700;color:var(--turf)}
+  .verdict.big .verdict-tag{color:var(--ink)}
+  .verdict-main{font-family:'Anton';font-size:72px;line-height:1.02;margin-top:12px}
+  .verdict-main .sit{color:var(--muted)}
+  .verdict-edge{display:flex;align-items:baseline;gap:20px;margin-top:16px}
+  .verdict-edge b{font-family:'Anton';font-size:48px;color:var(--turf)}
+  .verdict-edge span{font-size:23px;color:var(--muted);font-weight:500}
+  .verdict-note{font-size:23px;line-height:1.5;margin-top:14px;font-weight:500}
+
+  .sect{margin-top:52px}
+  .sect h2{font-size:28px;font-weight:800}
+  .sect .sub{font-size:22px;color:var(--muted);font-weight:500;margin-top:4px;line-height:1.45}
+  .sect .cap{font-size:23px;line-height:1.5;font-weight:500;margin-top:14px}
+  .chart-wrap{margin-top:18px}
+  svg text{font-family:'Archivo',sans-serif}
+
+  .ranges{margin-top:14px}
+  .r-row{display:grid;grid-template-columns:230px 1fr 130px;align-items:center;gap:18px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .r-row:last-child{border-bottom:none}
+  .r-name{font-size:24px;font-weight:600}
+  .r-track{position:relative;height:14px;border-radius:7px;background:var(--track)}
+  .r-band{position:absolute;top:0;height:100%;border-radius:7px;background:#B8DCC3}
+  .r-dot{position:absolute;top:50%;width:22px;height:22px;border-radius:50%;background:var(--turf);border:3px solid var(--card);transform:translate(-50%,-50%)}
+  .r-num{font-size:22px;color:var(--muted);font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+
+  .swings2{margin-top:14px}
+  .s-row{display:grid;grid-template-columns:1fr 90px;align-items:center;gap:16px;padding:10px 0}
+  .s-label{font-size:23px;font-weight:600;margin-bottom:6px}
+  .s-track{position:relative;height:20px}
+  .s-track::before{content:"";position:absolute;left:50%;top:-6px;bottom:-6px;width:2px;background:var(--line)}
+  .s-bar{position:absolute;top:0;height:100%;border-radius:6px}
+  .s-bar.up{left:50%;background:var(--turf)} .s-bar.down{right:50%;background:#DE4A2C}
+  .s-num{font-family:'Anton';font-size:30px;text-align:right;font-variant-numeric:tabular-nums}
+  .s-num.up{color:var(--turf)} .s-num.down{color:#DE4A2C}
+
+  .fine{margin-top:52px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:32px 40px}
+  .fine h2{font-size:26px;font-weight:800}
+  .fine p{font-size:22px;line-height:1.5;color:var(--muted);font-weight:500;margin-top:12px}
+
+  .cta{display:block;margin-top:44px;background:var(--turf);color:#FBFDF9;text-decoration:none;text-align:center;font-weight:800;font-size:27px;padding:22px;border-radius:16px}
+  .foot{margin-top:30px;padding-top:26px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:22px;color:var(--muted);font-weight:500}
+  .foot .handle{color:var(--ink);font-weight:800}
+</style>
+</head>
+<body>
+<div class="stage">
+<div class="card">
+
+  <div class="head">
+    <div class="brand">🤖 THE MACHINE HAS SPOKEN<small>a Broomiie production</small></div>
+    <div class="week" id="weekChip"></div>
+  </div>
+
+  <div class="prob">
+    <div class="h-label">Win probability, 10,000 simulated weeks</div>
+    <div class="prob-nums">
+      <div class="pct him" id="pctHim"></div>
+      <div class="who">you — them</div>
+      <div class="pct opp" id="pctOpp"></div>
+    </div>
+    <div class="bar"><span id="probFill"></span></div>
+    <div class="prob-meta"><div id="projLine"></div><div id="shapeLine"></div></div>
+  </div>
+
+  <div class="read" id="intro"></div>
+
+  <div class="verdict">
+    <div class="verdict-tag" id="vTag"></div>
+    <div class="verdict-main" id="vMain"></div>
+    <div class="verdict-edge"><b id="vEdge"></b><span id="vFlips"></span></div>
+    <div class="verdict-note" id="vNote"></div>
+  </div>
+
+  <div class="verdict big" style="margin-top:26px">
+    <div class="verdict-tag" id="bTag"></div>
+    <div class="verdict-main" id="bMain"></div>
+    <div class="verdict-note" id="bNote"></div>
+  </div>
+
+  <div class="sect">
+    <h2 id="distTitle"></h2>
+    <div class="sub" id="distSub"></div>
+    <div class="chart-wrap"><svg id="distChart" width="952" height="300" viewBox="0 0 952 300"></svg></div>
+    <div class="cap" id="distCap"></div>
+  </div>
+
+  <div class="sect">
+    <h2 id="rangeTitle"></h2>
+    <div class="sub" id="rangeSub"></div>
+    <div class="ranges" id="rangeRows"></div>
+    <div class="cap" id="rangeCap"></div>
+  </div>
+
+  <div class="sect">
+    <h2 id="swingTitle"></h2>
+    <div class="sub" id="swingSub"></div>
+    <div class="swings2" id="swingRows"></div>
+    <div class="cap" id="swingCap"></div>
+  </div>
+
+  <div class="fine">
+    <h2>📉 The machine's fine print</h2>
+    <div id="fineRows"></div>
+  </div>
+
+  <a class="cta" id="ctaBtn" href="#"></a>
+
+  <div class="foot">
+    <div id="footLine"></div>
+    <div class="handle" id="footHandle"></div>
+  </div>
+
+</div>
+</div>
+
+<script>
+/* ============================================================
+   REPORT — the whole verdict lives here. Words and numbers.
+   Twin: to generate a new verdict page, copy this file and
+   rewrite ONLY this object from the latest sim run. Voice:
+   casual, confident, knows ball. Never make kickers a talking
+   point. Big boys and real edges only.
+============================================================ */
+const REPORT = {
+  week: "Week 1",
+  ctaText: "Get your matchup graded 🤖",
+  ctaLink: "https://whop.com/broomiie-s-ball-knowers/the-locker-room-62/", // twin: use the app footer link
+  footLine: "Graded by the machine. Spreads modeled, not sourced.",
+  footHandle: "@broomiie",
+
+  him: { pct: 37.6, proj: 118.0, median: 116.2, p5: 88,  p95: 154 },
+  opp: { pct: 62.4, proj: 126.8, median: 125.1, p5: 95,  p95: 165 },
+  oneScorePct: 13, blowoutPct: 31,
+  baseline: 37.8, // win% if all Questionables play
+
+  intro: [
+    "You're walking in a live underdog, not a dead one. The machine ran this matchup 10,000 times: they take it 62.4% of the time, average margin nine points, 118.0 to 126.8 on the projections. But don't read that as chalk — 13% of these weeks come down to one score, and somebody gets blown out in 31% of them. Wide-range week.",
+    "Your path runs through exactly two things: a free edge sitting on your bench, and your big boys out-hitting theirs. Both are below, with the receipts."
+  ],
+
+  verdict: {
+    tag: "🔥 Points on your bench",
+    main: 'START HOCKENSON<br><span class="sit">SIT KITTLE</span>',
+    edge: "+1.3% WIN PROB",
+    flips: "flips 661 of 10,000 weeks",
+    note: "The projections sit only 0.9 apart and the two carry near-identical risk profiles, so this is a pure projection edge — not ceiling-chasing. Kittle drew the Questionable tag this week while Hockenson is full-go, and Kittle's Thursday kickoff means this call locks early. The math and the injury report agree. Easiest call on the board. ✅"
+  },
+
+  bigboys: {
+    tag: "⭐ The big boys decide it",
+    main: 'HALL\'S 30-POINT CEILING<br><span class="sit">vs THEIR EAGLES STACK</span>',
+    note: "Breece owns the widest range on your roster — a 9-point floor, a 30-point ceiling, and your week mostly rides where he lands. On their side it's a triple Philly stack: Hurts, Barkley, and Goedert rise and fall together, one offense deciding their whole lineup. Their stack cools, Breece finds the ceiling, and your 37.6% cashes. 💪"
+  },
+
+  dist: {
+    title: "Where the final scores land 📈",
+    sub: "Fantasy points across all 10,000 simulated weeks",
+    cap: "The gray hill is them, the green hill is you — everything in the overlap is a genuine coin flip. That green tail running past their median? Those are your winning weeks, and they exist in volume."
+  },
+
+  rangeTitle: "Your starters, floor to ceiling 🎢",
+  rangeSub: "10th–90th percentile band, dot = projection",
+  rangeCap: "Wide band = boom-bust, tight band = steady. Your week swings on the wide ones — that's why Breece is the headline and not the box-score leaders.",
+  ranges: [ // [name, floor10, ceil90, proj]
+    ["B. Hall 🟡",    9, 30, 18.44],
+    ["J. Cook III",   8, 27, 16.95],
+    ["Q. Judkins",    8, 25, 15.30],
+    ["D. Smith",      7, 25, 15.06],
+    ["A. Brown",      7, 24, 14.57],
+    ["D. Maye",       8, 20, 13.55],
+    ["C. Dicker 🟡",  4, 14,  9.06],
+    ["G. Kittle 🟡",  4, 14,  8.42],
+    ["Steelers D/ST", 1, 13,  6.65],
+  ],
+  rangeMax: 32,
+
+  swingTitle: "One inactive swings it 💥",
+  swingCap: "Injury tags are probabilities, not verdicts — most Questionables play. This is what each scenario does to your number so nothing on Sunday surprises you.",
+  swings: [ // [label, delta in win-prob points]
+    ["Kittle sits, Hockenson covers", +1.3],
+    ["Their Flowers sits, McLaurin covers", +2.6],
+    ["Hall sits, Williams covers", -8.1],
+  ],
+
+  finePrint: [
+    "The spreads behind every curve and error bar are modeled from position-typical variance — nobody publishes true player distributions, so floors and ceilings are honest estimates, not gospel.",
+    "The sim treats their Eagles stack as independent players. Real stacks are correlated, so their true range is wider in both directions — read their 62.4% with that squint. The machine tells you its own blind spots. That's the difference."
+  ]
+};
+
+/* ---------- render (twin: don't touch below this line) ---------- */
+const $ = id => document.getElementById(id);
+$('weekChip').textContent = REPORT.week;
+$('pctHim').textContent = REPORT.him.pct.toFixed(1);
+$('pctOpp').textContent = REPORT.opp.pct.toFixed(1);
+$('probFill').style.width = REPORT.him.pct + '%';
+$('projLine').textContent = 'Projected ' + REPORT.him.proj.toFixed(1) + ' — ' + REPORT.opp.proj.toFixed(1);
+$('shapeLine').textContent = 'One-score game ' + REPORT.oneScorePct + '% · blowout ' + REPORT.blowoutPct + '%';
+$('intro').innerHTML = REPORT.intro.map(p => '<p class="prose">' + p + '</p>').join('');
+$('vTag').textContent = REPORT.verdict.tag;
+$('vMain').innerHTML = REPORT.verdict.main;
+$('vEdge').textContent = REPORT.verdict.edge;
+$('vFlips').textContent = REPORT.verdict.flips;
+$('vNote').textContent = REPORT.verdict.note;
+$('bTag').textContent = REPORT.bigboys.tag;
+$('bMain').innerHTML = REPORT.bigboys.main;
+$('bNote').textContent = REPORT.bigboys.note;
+$('distTitle').textContent = REPORT.dist.title;
+$('distSub').textContent = REPORT.dist.sub;
+$('distCap').textContent = REPORT.dist.cap;
+$('rangeTitle').textContent = REPORT.rangeTitle;
+$('rangeSub').textContent = REPORT.rangeSub;
+$('rangeCap').textContent = REPORT.rangeCap;
+$('swingTitle').textContent = REPORT.swingTitle;
+$('swingSub').textContent = 'Change in your win probability vs everyone playing (' + REPORT.baseline.toFixed(1) + '%)';
+$('swingCap').textContent = REPORT.swingCap;
+$('fineRows').innerHTML = REPORT.finePrint.map(p => '<p>' + p + '</p>').join('');
+$('ctaBtn').textContent = REPORT.ctaText;
+$('ctaBtn').href = REPORT.ctaLink;
+$('footLine').textContent = REPORT.footLine;
+$('footHandle').textContent = REPORT.footHandle;
+
+/* distribution curves */
+(function(){
+  const svg = $('distChart');
+  const W=952, H=300, padB=44, padT=16;
+  const xmin=Math.min(REPORT.him.p5,REPORT.opp.p5)-8, xmax=Math.max(REPORT.him.p95,REPORT.opp.p95)+8;
+  const x=v=>(v-xmin)/(xmax-xmin)*W;
+  const sig=t=>(t.p95-t.p5)/3.29, gauss=(v,m,s)=>Math.exp(-((v-m)**2)/(2*s*s));
+  function curve(t){
+    const s=sig(t), pts=[];
+    for(let v=xmin;v<=xmax;v+=1) pts.push(x(v).toFixed(1)+','+(H-padB-gauss(v,t.median,s)*(H-padB-padT)).toFixed(1));
+    return 'M'+x(xmin).toFixed(1)+','+(H-padB)+' L'+pts.join(' L')+' L'+x(xmax).toFixed(1)+','+(H-padB)+' Z';
+  }
+  function P(d,fill,stroke){const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',d);p.setAttribute('fill',fill);p.setAttribute('stroke',stroke);p.setAttribute('stroke-width','3');svg.appendChild(p);}
+  function T(tx,ty,txt,fill,anchor,size,weight){const t=document.createElementNS('http://www.w3.org/2000/svg','text');t.setAttribute('x',tx);t.setAttribute('y',ty);t.setAttribute('fill',fill);t.setAttribute('text-anchor',anchor||'middle');t.setAttribute('font-size',size||20);t.setAttribute('font-weight',weight||600);t.textContent=txt;svg.appendChild(t);}
+  for(let v=Math.ceil(xmin/20)*20; v<=xmax; v+=20){
+    P('M'+x(v)+','+(H-padB)+' L'+x(v)+','+(H-padB+8),'none','#D9E2D5');
+    T(x(v),H-14,v,'#67796C','middle',19,500);
+  }
+  P('M0,'+(H-padB)+' L'+W+','+(H-padB),'none','#D9E2D5');
+  P(curve(REPORT.opp),'rgba(21,33,24,0.10)','rgba(21,33,24,0.35)');
+  P(curve(REPORT.him),'rgba(23,143,71,0.22)','#178F47');
+  [[REPORT.him,'#178F47','you '],[REPORT.opp,'#44544A','them ']].forEach(([t,c,who])=>{
+    P('M'+x(t.median)+','+padT+' L'+x(t.median)+','+(H-padB),'none',c);
+    T(x(t.median), padT+22, who+t.median.toFixed(1), c, t===REPORT.him?'end':'start', 22, 800);
+  });
+})();
+
+/* floor/ceiling rows */
+(function(){
+  const wrap=$('rangeRows'); const mx=REPORT.rangeMax;
+  REPORT.ranges.forEach(([name,f,c,p])=>{
+    const row=document.createElement('div'); row.className='r-row';
+    row.innerHTML =
+      '<div class="r-name">'+name+'</div>'+
+      '<div class="r-track"><div class="r-band" style="left:'+(f/mx*100)+'%;width:'+((c-f)/mx*100)+'%"></div>'+
+      '<div class="r-dot" style="left:'+(p/mx*100)+'%"></div></div>'+
+      '<div class="r-num">'+f+' – '+c+'</div>';
+    wrap.appendChild(row);
+  });
+})();
+
+/* swing bars */
+(function(){
+  const wrap=$('swingRows');
+  const mx=Math.max(...REPORT.swings.map(s=>Math.abs(s[1])));
+  REPORT.swings.forEach(([label,d])=>{
+    const up=d>=0, w=Math.abs(d)/mx*50;
+    const row=document.createElement('div'); row.className='s-row';
+    row.innerHTML =
+      '<div><div class="s-label">'+label+'</div>'+
+      '<div class="s-track"><div class="s-bar '+(up?'up':'down')+'" style="width:'+w+'%"></div></div></div>'+
+      '<div class="s-num '+(up?'up':'down')+'">'+(up?'+':'−')+Math.abs(d).toFixed(1)+'</div>';
+    wrap.appendChild(row);
+  });
+})();
+
+/* fit preview to screen */
+function fit(){
+  const s=Math.min(1,(window.innerWidth-16)/1080);
+  const el=document.querySelector('.stage');
+  el.style.transform='scale('+s+')'; el.style.transformOrigin='top center';
+  document.body.style.height=(el.scrollHeight*s+48)+'px';
+}
+window.addEventListener('load',fit); window.addEventListener('resize',fit);
+</script>
+</body>
+</html>
